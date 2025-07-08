@@ -1,6 +1,6 @@
 <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
     <div class="app-brand demo">
-        <a href="index.html" class="app-brand-link">
+        <a href="#" class="app-brand-link">
               <span class="app-brand-logo demo">
         <img src="{{ asset('coworkly.png') }}" alt="Coworkly Logo" class="app-brand-logo" width="75">
               </span>
@@ -16,38 +16,49 @@
 
     <ul class="menu-inner py-4">
         <!-- Dashboard -->
-        <li class="menu-item {{ request()->routeIs('home') ? 'active' : '' }}">
-            <a href="{{route('home')}}" class="menu-link">
+        <li class="menu-item">
+            <a href="#" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-home-alt"></i>
                 <div data-i18n="Dashboard">Dashboard</div>
             </a>
         </li>
 
-
         <li class="menu-header small text-uppercase"><span class="menu-header-text">Booking Management</span></li>
 
-        <li class="menu-item {{ request()->routeIs('bookings.index') ? 'active' : '' }}">
-            <a href="{{route('bookings.index')}}" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-calendar-plus"></i>
-                <div data-i18n="Book a Workspace">Book a Workspace</div>
+        <li class="menu-item">
+            <a href="#" class="menu-link">
+                <i class="menu-icon tf-icons bx bxs-plus-square"></i>
+                <div data-i18n="Book a Workspace">File a Report</div>
             </a>
         </li>
 
-
-        <li class="menu-item {{ request()->routeIs('workspace.index') ? 'active' : '' }}">
-            <a href="{{route('workspace.index')}}" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-building"></i>
-                <div data-i18n="My Workspaces">My Workspaces</div>
-            </a>
-        </li>
-        <li class="menu-item {{ request()->routeIs('group-chats.index') ? 'active' : '' }}">
-            <a href="{{route('group-chats.index')}}" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-chat"></i>
-                <div data-i18n="Group Chats">Group Chats</div>
+        <li class="menu-item">
+            <a href="#" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-map"></i>
+                <div data-i18n="My Workspaces">View Map</div>
             </a>
         </li>
 
+        <li class="menu-item">
+            <a href="#" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-shield-alt-2"></i>
+                <div data-i18n="My Workspaces">Crime Reports</div>
+            </a>
+        </li>
 
+        <li class="menu-item">
+            <a href="#" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-cog"></i>
+                <div data-i18n="My Workspaces">Community Portal Moderation</div>
+            </a>
+        </li>
+
+        <li class="menu-item">
+            <a href="#" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-message"></i>
+                <div data-i18n="My Workspaces">Announcements</div>
+            </a>
+        </li>
 
     </ul>
 </aside>
