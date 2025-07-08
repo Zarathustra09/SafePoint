@@ -39,8 +39,8 @@
             </a>
         </li>
 
-        <li class="menu-item">
-            <a href="#" class="menu-link">
+        <li class="menu-item{{ request()->routeIs('reports.list') ? ' active' : '' }}">
+            <a href="{{route('reports.list')}}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-shield-alt-2"></i>
                 <div data-i18n="My Workspaces">Crime Reports</div>
             </a>
