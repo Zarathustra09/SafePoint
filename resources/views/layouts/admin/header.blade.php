@@ -2,7 +2,7 @@
     <div class="app-brand demo">
         <a href="#" class="app-brand-link">
               <span class="app-brand-logo demo">
-        <img src="{{ asset('coworkly.png') }}" alt="Coworkly Logo" class="app-brand-logo" width="75">
+        <img src="{{ asset('coworkly.png') }}" alt="{{env('APP_NAME')}}" class="app-brand-logo" width="75">
               </span>
             <span class="app-brand-text demo menu-text fw-bolder ms-2">{{env('APP_NAME')}}</span>
         </a>
@@ -16,8 +16,8 @@
 
     <ul class="menu-inner py-4">
         <!-- Dashboard -->
-        <li class="menu-item">
-            <a href="#" class="menu-link">
+        <li class="menu-item{{ request()->routeIs('home') ? ' active' : '' }}">
+            <a href="{{route('home')}}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-home-alt"></i>
                 <div data-i18n="Dashboard">Dashboard</div>
             </a>
