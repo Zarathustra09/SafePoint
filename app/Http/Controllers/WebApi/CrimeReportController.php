@@ -11,7 +11,7 @@ class CrimeReportController extends Controller
 {
     public function index()
     {
-        $crimeReports = CrimeReport::with('reporter')->latest()->paginate(10);
+        $crimeReports = CrimeReport::with('reporter')->get();
         return view('crime-report.index', compact('crimeReports'));
     }
 
@@ -83,6 +83,12 @@ class CrimeReportController extends Controller
         return redirect()->route('reports.index')
             ->with('success', 'Crime report updated successfully.');
     }
+
+     public function list()
+     {
+         $crimeReports = CrimeReport::with('reporter')->get();
+         return view('crime-report.list', compact('crimeReports'));
+     }
 
 
 }

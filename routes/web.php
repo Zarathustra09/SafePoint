@@ -13,7 +13,7 @@ Auth::routes();
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 
-
+Route::get('/reports/list', [CrimeReportController::class, 'list'])->name('reports.list');
 Route::resource('/reports', CrimeReportController::class);
 
 Route::resource('/announcements', AnnouncementController::class);

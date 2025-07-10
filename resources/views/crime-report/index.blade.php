@@ -22,77 +22,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Crime Reports List -->
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h5>Recent Crime Reports</h5>
-                    </div>
-                    <div class="card-body">
-                        @if($crimeReports->count() > 0)
-                            <div class="table-responsive">
-                                <table class="table table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>Title</th>
-                                            <th>Severity</th>
-                                            <th>Status</th>
-                                            <th>Address</th>
-                                            <th>Incident Date</th>
-                                            <th>Reported By</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($crimeReports as $report)
-                                            <tr>
-                                                <td>{{ $report->title }}</td>
-                                                <td>
-                                                    <span class="badge bg-{{ $report->severity === 'critical' ? 'danger' : ($report->severity === 'high' ? 'warning' : ($report->severity === 'medium' ? 'info' : 'secondary')) }}">
-                                                        {{ ucfirst($report->severity) }}
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <span class="badge bg-{{ $report->status === 'resolved' ? 'success' : ($report->status === 'under_investigation' ? 'warning' : 'secondary') }}">
-                                                        {{ ucfirst(str_replace('_', ' ', $report->status)) }}
-                                                    </span>
-                                                </td>
-                                                <td>{{ Str::limit($report->address, 50) }}</td>
-                                                <td>{{ $report->incident_date->format('M d, Y H:i') }}</td>
-                                                <td>{{ $report->reporter->name ?? 'Unknown' }}</td>
-                                                <td>
-                                                    <div class="btn-group btn-group-sm">
-                                                        <a href="{{ route('reports.show', $report) }}" class="btn btn-outline-primary btn-sm">View</a>
-                                                        <a href="{{ route('reports.edit', $report) }}" class="btn btn-outline-secondary btn-sm">Edit</a>
-                                                        <form method="POST" action="{{ route('reports.destroy', $report) }}" class="d-inline">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Are you sure?')">Delete</button>
-                                                        </form>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <!-- Pagination -->
-                            <div class="d-flex justify-content-center">
-                                {{ $crimeReports->links() }}
-                            </div>
-                        @else
-                            <div class="text-center py-4">
-                                <p class="text-muted">No crime reports found.</p>
-                                <a href="{{ route('reports.create') }}" class="btn btn-primary">Create First Report</a>
-                            </div>
-                        @endif
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Crime Report Modal -->
@@ -120,7 +49,7 @@
         let infoWindow;
 
         // Crime reports data
-        const crimeReports = @json($crimeReports->items());
+        const crimeReports = @json($crimeReports);
 
         function initMap() {
             // Default location - Tanauan City, Batangas, Philippines
