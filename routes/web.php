@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\WebApi\AnnouncementController;
 use App\Http\Controllers\WebApi\CrimeReportController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -15,3 +16,4 @@ Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name
 
 Route::resource('/reports', CrimeReportController::class);
 
+Route::resource('/announcements', AnnouncementController::class);
