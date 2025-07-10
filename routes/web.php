@@ -16,4 +16,6 @@ Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name
 Route::get('/reports/list', [CrimeReportController::class, 'list'])->name('reports.list');
 Route::resource('/reports', CrimeReportController::class);
 
+Route::put('/announcements/{announcement}/image/{imageId}', [AnnouncementController::class, 'updateImage']);
+Route::delete('/announcements/{announcement}/image/{imageId}', [AnnouncementController::class, 'deleteImage']);
 Route::resource('/announcements', AnnouncementController::class);
