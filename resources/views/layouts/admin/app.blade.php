@@ -73,22 +73,53 @@
 
     <style>
 
-        .bg-primary {
-            background-color: #c25d5f !important;
-        }
+       .bg-primary {
+           background-color: #c25d5f !important;
+       }
 
-        .navbar-nav-right {
-            z-index: 1000;
-        }
+       .navbar-nav-right {
+           z-index: 1000;
+       }
 
-        /* And for the custom SweetAlert classes */
-        .custom-swal-container {
-            z-index: 9999 !important;
-        }
+       /* SweetAlert2 toast positioning and z-index */
+       .swal2-container {
+           z-index: 99999 !important;
+       }
 
-        .custom-swal-popup {
-            z-index: 10000 !important;
-        }
+       .swal2-popup {
+           z-index: 100000 !important;
+       }
+
+       /* Specific styles for toast notifications */
+       .swal2-toast {
+           z-index: 100001 !important;
+       }
+
+       /* Ensure toast appears above everything */
+       .swal2-container.swal2-top-end {
+           z-index: 100002 !important;
+           pointer-events: none;
+       }
+
+       .swal2-container.swal2-top-end .swal2-popup {
+           pointer-events: auto;
+           margin-top: 1rem;
+           margin-right: 1rem;
+       }
+
+       /* Timer progress bar styling */
+       .swal2-timer-progress-bar {
+           background: rgba(255, 255, 255, 0.8) !important;
+       }
+
+       /* Custom SweetAlert classes (keeping for backward compatibility) */
+       .custom-swal-container {
+           z-index: 99999 !important;
+       }
+
+       .custom-swal-popup {
+           z-index: 100000 !important;
+       }
 
 
     </style>
