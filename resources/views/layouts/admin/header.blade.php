@@ -53,8 +53,8 @@
             </a>
         </li>
 
-        <li class="menu-item">
-            <a href="#" class="menu-link">
+        <li class="menu-item {{ request()->routeIs('announcements.*') ? ' active' : '' }}">
+            <a href="{{route('announcements.index')}}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-message"></i>
                 <div data-i18n="My Workspaces">Announcements</div>
             </a>
