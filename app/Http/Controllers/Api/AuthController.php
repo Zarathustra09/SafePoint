@@ -12,11 +12,15 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->only('email', 'password');
-
         \Log::info('Login attempt', ['email' => $credentials['email']]);
 
         if (Auth::attempt($credentials)) {
             $user = Auth::user();
+            if (!$user->is_verified) {
+                \Log::warning('Unverified user login attempt', ['email' => $credentials['email']]);
+                Auth::logout();
+                return response()->json(['error' => 'Account not verified'], 403);
+            }
             $token = $user->createToken('authToken')->plainTextToken;
             \Log::info('token', ['token' => $token]);
             return response()->json(['token' => $token, 'user_id' => $user->id], 200);

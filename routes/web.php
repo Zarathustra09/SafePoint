@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\WebApi\AnnouncementController;
 use App\Http\Controllers\WebApi\CrimeReportController;
 use Illuminate\Support\Facades\Auth;
@@ -28,3 +29,10 @@ Route::delete('/profile/reset-image', [App\Http\Controllers\ProfileController::c
 Route::put('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
 Route::delete('/profile', [App\Http\Controllers\ProfileController::class, 'destroy'])->name('profile.destroy');
 
+
+Route::prefix('approval')->middleware(['auth'])->group(function () {
+    Route::get('/', [ApprovalController::class, 'index'])->name('approval.index');
+    Route::get('/{user}', [ApprovalController::class, 'show'])->name('approval.show');
+    Route::post('/{user}/approve', [ApprovalController::class, 'approve'])->name('approval.approve');
+    Route::post('/{user}/reject', [ApprovalController::class, 'reject'])->name('approval.reject');
+});
