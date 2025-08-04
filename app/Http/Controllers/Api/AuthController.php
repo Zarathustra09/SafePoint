@@ -36,6 +36,7 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
+            'valid_id_image' => 'required|string',
         ]);
 
         if ($validator->fails()) {
@@ -49,6 +50,7 @@ class AuthController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => \Hash::make($request->password),
+            'valid_id_image' => $request->valid_id_image,
         ]);
 
         $token = $user->createToken('authToken')->plainTextToken;
