@@ -46,21 +46,13 @@ class AuthController extends Controller
             ], 422);
         }
 
-
-        $maxLength = 10000;
-        $validIdImage = substr($request->valid_id_image, 0, $maxLength);
+        $path = $request->file('valid_id_image')->store('valid_ids', 'public');
 
         $user = \App\Models\User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => \Hash::make($request->password),
-            'valid_id_image' => $validIdImage,
-        ]);
-
-        \Log::info('User registered', [
-            'user_id' => $user->id,
-            'email' => $user->email,
-            'valid_id_image' => $user->valid_id_image
+            'valid_id_image' => $path,
         ]);
 
         $token = $user->createToken('authToken')->plainTextToken;
