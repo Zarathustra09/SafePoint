@@ -47,6 +47,15 @@
                             </div>
                         </div>
 
+                        @if($crimeReport->report_image)
+                            <div class="row mb-4">
+                                <div class="col-md-12">
+                                    <h6>Report Image</h6>
+                                    <img src="{{ asset('storage/' . $crimeReport->report_image) }}" alt="Report Image" class="img-fluid rounded border" style="max-height: 350px;">
+                                </div>
+                            </div>
+                        @endif
+
                         <div class="row">
                             <div class="col-md-6">
                                 <h6>Incident Details</h6>

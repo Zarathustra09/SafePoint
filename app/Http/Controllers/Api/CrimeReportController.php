@@ -34,6 +34,9 @@ class CrimeReportController extends Controller
         return $crimeReports;
     }
 
+
+    // app/Http/Controllers/Api/CrimeReportController.php
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -45,15 +48,15 @@ class CrimeReportController extends Controller
             'address' => 'nullable|string|max:255',
             'incident_date' => 'required|date',
             'reported_by' => 'nullable|exists:users,id',
+            'report_image' => 'nullable|file|mimes:jpeg,png,jpg|max:2048',
         ]);
+
+        if ($request->hasFile('report_image')) {
+            $validated['report_image'] = $request->file('report_image')->store('report_images', 'public');
+        }
 
         $crimeReport = CrimeReport::create($validated);
 
-        return $crimeReport->load('reporter');
-    }
-
-    public function show(CrimeReport $crimeReport)
-    {
         return $crimeReport->load('reporter');
     }
 
@@ -68,12 +71,26 @@ class CrimeReportController extends Controller
             'address' => 'nullable|string|max:255',
             'status' => 'sometimes|in:pending,under_investigation,resolved,closed',
             'incident_date' => 'sometimes|date',
+            'report_image' => 'nullable|file|mimes:jpeg,png,jpg|max:2048',
         ]);
+
+        if ($request->hasFile('report_image')) {
+            $validated['report_image'] = $request->file('report_image')->store('report_images', 'public');
+        }
 
         $crimeReport->update($validated);
 
         return $crimeReport->load('reporter');
     }
+
+
+
+    public function show(CrimeReport $crimeReport)
+    {
+        return $crimeReport->load('reporter');
+    }
+
+
 
     public function destroy(CrimeReport $crimeReport)
     {

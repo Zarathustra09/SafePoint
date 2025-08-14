@@ -20,6 +20,7 @@ class CrimeReport extends Model
         'status',
         'incident_date',
         'reported_by',
+        'report_image',
     ];
 
     protected $casts = [
