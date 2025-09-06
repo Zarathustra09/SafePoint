@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AIController;
 use App\Http\Controllers\Api\AuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -14,3 +15,7 @@ Route::middleware('auth:sanctum')->apiResource('announcements', App\Http\Control
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::middleware('auth:sanctum')->get('/user', [AuthController::class, 'getUser']);
+
+
+ Route::post('/safer-route', [AIController::class, 'generateSaferRoute']);
+
