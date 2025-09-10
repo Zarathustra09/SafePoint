@@ -36,3 +36,12 @@ Route::prefix('approval')->middleware(['auth'])->group(function () {
     Route::post('/{user}/approve', [ApprovalController::class, 'approve'])->name('approval.approve');
     Route::post('/{user}/reject', [ApprovalController::class, 'reject'])->name('approval.reject');
 });
+
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/profile', [App\Http\Controllers\Api\ProfileController::class, 'show']);
+    Route::put('/profile', [App\Http\Controllers\Api\ProfileController::class, 'update']);
+    Route::post('/profile/upload-image', [App\Http\Controllers\Api\ProfileController::class, 'uploadImage']);
+    Route::delete('/profile/reset-image', [App\Http\Controllers\Api\ProfileController::class, 'resetImage']);
+    Route::delete('/profile', [App\Http\Controllers\Api\ProfileController::class, 'destroy']);
+});

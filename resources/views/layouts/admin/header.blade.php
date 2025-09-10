@@ -25,12 +25,12 @@
 
         <li class="menu-header small text-uppercase"><span class="menu-header-text">Booking Management</span></li>
 
-        <li class="menu-item{{ request()->routeIs('reports.create') ? ' active' : '' }}">
-            <a href="{{route('reports.create')}}" class="menu-link">
-                <i class="menu-icon tf-icons bx bxs-plus-square"></i>
-                <div data-i18n="Book a Workspace">File a Report</div>
-            </a>
-        </li>
+{{--        <li class="menu-item{{ request()->routeIs('reports.create') ? ' active' : '' }}">--}}
+{{--            <a href="{{route('reports.create')}}" class="menu-link">--}}
+{{--                <i class="menu-icon tf-icons bx bxs-plus-square"></i>--}}
+{{--                <div data-i18n="Book a Workspace">File a Report</div>--}}
+{{--            </a>--}}
+{{--        </li>--}}
 
         <li class="menu-item{{ request()->routeIs('reports.index') ? ' active' : '' }}">
             <a href="{{route('reports.index')}}" class="menu-link">
