@@ -25,4 +25,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/profile/upload-image', [App\Http\Controllers\Api\ProfileController::class, 'uploadImage']);
     Route::delete('/profile/reset-image', [App\Http\Controllers\Api\ProfileController::class, 'resetImage']);
     Route::delete('/profile', [App\Http\Controllers\Api\ProfileController::class, 'destroy']);
+
+
+    Route::get('/crime-reports/my-reports', [App\Http\Controllers\Api\CrimeReportController::class, 'myReports']);
 });
