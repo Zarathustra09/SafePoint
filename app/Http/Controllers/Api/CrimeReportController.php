@@ -98,4 +98,27 @@ class CrimeReportController extends Controller
 
         return response()->noContent();
     }
+
+
+    public function myReports(Request $request)
+    {
+        $query = CrimeReport::with('reporter')
+            ->where('reported_by', auth()->id());
+
+        if ($request->has('severity')) {
+            $query->bySeverity($request->severity);
+        }
+
+        if ($request->has('status')) {
+            $query->byStatus($request->status);
+        }
+
+        $crimeReports = $query->latest()->paginate(15);
+
+        return response()->json([
+            'success' => true,
+            'data' => $crimeReports
+        ]);
+    }
+
 }
