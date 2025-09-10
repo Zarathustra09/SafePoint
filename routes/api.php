@@ -10,7 +10,7 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 
-Route::get('/my-reports', [App\Http\Controllers\Api\CrimeReportController::class, 'myReports']);
+Route::middleware('auth:sanctum')->get('/my-reports', [App\Http\Controllers\Api\CrimeReportController::class, 'myReports']);
 Route::middleware('auth:sanctum')->apiResource('crime-reports', App\Http\Controllers\Api\CrimeReportController::class);
 Route::middleware('auth:sanctum')->apiResource('announcements', App\Http\Controllers\Api\AnnouncementController::class);
 

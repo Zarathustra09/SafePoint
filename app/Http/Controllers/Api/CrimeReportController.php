@@ -100,25 +100,34 @@ class CrimeReportController extends Controller
     }
 
 
-    public function myReports(Request $request)
-    {
-        $query = CrimeReport::with('reporter')
-            ->where('reported_by', auth()->id());
+   public function myReports(Request $request)
+   {
+       $user = auth()->user();
 
-        if ($request->has('severity')) {
-            $query->bySeverity($request->severity);
-        }
+       if (!$user) {
+           return response()->json([
+               'success' => false,
+               'message' => 'User not authenticated'
+           ], 401);
+       }
 
-        if ($request->has('status')) {
-            $query->byStatus($request->status);
-        }
+       $query = $user->crimeReports()->with('reporter');
 
-        $crimeReports = $query->latest()->paginate(15);
+       if ($request->has('severity')) {
+           $query->bySeverity($request->severity);
+       }
 
-        return response()->json([
-            'success' => true,
-            'data' => $crimeReports
-        ]);
-    }
+       if ($request->has('status')) {
+           $query->byStatus($request->status);
+       }
+
+       $crimeReports = $query->latest()->paginate(15);
+
+       return response()->json([
+           'success' => true,
+           'data' => $crimeReports,
+           'message' => 'Crime reports retrieved successfully'
+       ]);
+   }
 
 }
