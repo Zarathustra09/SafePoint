@@ -21,7 +21,7 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::middleware('auth:sanctum')->get('/user', [AuthController::class, 'getUser']);
 
 
- Route::post('/safer-route', [AIController::class, 'generateSaferRoute']);
+Route::post('/safer-route', [AIController::class, 'generateSaferRoute']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile', [App\Http\Controllers\Api\ProfileController::class, 'show']);
@@ -29,8 +29,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/profile/upload-image', [App\Http\Controllers\Api\ProfileController::class, 'uploadImage']);
     Route::delete('/profile/reset-image', [App\Http\Controllers\Api\ProfileController::class, 'resetImage']);
     Route::delete('/profile', [App\Http\Controllers\Api\ProfileController::class, 'destroy']);
-
-
-
 });
 

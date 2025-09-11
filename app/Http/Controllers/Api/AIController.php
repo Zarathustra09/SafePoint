@@ -8,6 +8,7 @@ use GeminiAPI\Client;
 use GeminiAPI\Resources\Parts\TextPart;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Http;
 
 class AIController extends Controller
 {
@@ -23,29 +24,102 @@ class AIController extends Controller
         $request->validate([
             'start_lat' => 'required|numeric',
             'start_lng' => 'required|numeric',
-            'end_lat' => 'required|numeric',
-            'end_lng' => 'required|numeric',
-            'radius' => 'numeric|min:1|max:50'
+            'end_lat'   => 'required|numeric',
+            'end_lng'   => 'required|numeric',
+            'radius'    => 'numeric|min:1|max:50'
         ]);
 
         $radius = $request->input('radius', 5);
 
-        // Get crime reports near the route
-        $crimeData = $this->getCrimeDataAlongRoute(
+        // ✅ 1. Get top 10 crime reports near start location
+        $crimeData = CrimeReport::nearLocation(
             $request->start_lat,
             $request->start_lng,
-            $request->end_lat,
-            $request->end_lng,
             $radius
-        );
+        )
+            ->orderBy('severity', 'desc')
+            ->limit(10)
+            ->get(['id','title','severity','latitude','longitude'])
+            ->toArray();
 
-        // Generate safer route using Gemini AI
-        $saferRoute = $this->generateRouteWithAI($crimeData, $request->all());
+        // ✅ 2. Fetch candidate routes from Google Maps Directions API
+        $mapsKey = env('GOOGLE_MAPS_API_KEY');
+        $directionsUrl = "https://maps.googleapis.com/maps/api/directions/json";
+        $directionsResponse = Http::get($directionsUrl, [
+            'origin' => "{$request->start_lat},{$request->start_lng}",
+            'destination' => "{$request->end_lat},{$request->end_lng}",
+            'alternatives' => 'true', // multiple route options
+            'key' => $mapsKey,
+        ]);
+
+        if ($directionsResponse->failed()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get routes from Google Maps'
+            ], 500);
+        }
+
+        $routes = $directionsResponse->json('routes', []);
+
+        if (empty($routes)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No routes found'
+            ], 404);
+        }
+
+        // ✅ 3. Ask Gemini to pick the safest route
+        $apiKey = env('GEMINI_API_KEY');
+        $prompt = "
+        You are a navigation safety AI.
+        Given:
+        - Crime reports: " . json_encode($crimeData) . "
+        - Candidate routes: " . json_encode(array_map(function($r) {
+                        return [
+                            'summary' => $r['summary'] ?? '',
+                            'legs' => $r['legs'] ?? [],
+                            'polyline' => $r['overview_polyline']['points'] ?? ''
+                        ];
+                    }, $routes)) . "
+
+        Task:
+        Select the safest route (avoid high severity crime locations if possible).
+        Return ONLY the Google Maps polyline string of the safest route.
+        ";
+
+        $geminiResponse = Http::withHeaders([
+            'Content-Type' => 'application/json',
+        ])->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={$apiKey}", [
+            'contents' => [
+                [
+                    'parts' => [
+                        ['text' => $prompt]
+                    ]
+                ]
+            ]
+        ]);
+
+        if ($geminiResponse->failed()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get safer route from Gemini',
+                'crime_data' => $crimeData,
+                'routes' => $routes
+            ], 500);
+        }
+
+        $geminiData = $geminiResponse->json();
+        $aiText = $geminiData['candidates'][0]['content']['parts'][0]['text'] ?? null;
+
+        // Extract polyline string (strip quotes or extra text)
+        preg_match('/"([^"]+)"/', $aiText, $matches);
+        $polyline = $matches[1] ?? trim($aiText);
 
         return response()->json([
             'success' => true,
-            'route' => $saferRoute,
-            'crime_data' => $crimeData
+            'polyline' => $polyline,
+            'crime_data' => $crimeData,
+            'routes' => $routes // optional: return all Google Maps routes for debugging
         ]);
     }
 
