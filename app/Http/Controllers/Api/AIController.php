@@ -9,6 +9,7 @@ use GeminiAPI\Resources\Parts\TextPart;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class AIController extends Controller
 {
@@ -19,212 +20,404 @@ class AIController extends Controller
         $this->geminiClient = new Client(config('services.gemini.api_key'));
     }
 
+
+    /**
+     * Generate safer route without Gemini AI (pure mathematical approach)
+     * Uses Google Routes API instead of legacy Directions API
+     */
     public function generateSaferRoute(Request $request): JsonResponse
     {
+        Log::info('generateSaferRoute called', [
+            'start_lat' => $request->start_lat,
+            'start_lng' => $request->start_lng,
+            'end_lat' => $request->end_lat,
+            'end_lng' => $request->end_lng,
+            'radius' => $request->input('radius', 5)
+        ]);
+
         $request->validate([
-            'start_lat' => 'required|numeric',
-            'start_lng' => 'required|numeric',
-            'end_lat'   => 'required|numeric',
-            'end_lng'   => 'required|numeric',
-            'radius'    => 'numeric|min:1|max:50'
+            'start_lat' => 'required|numeric|between:-90,90',
+            'start_lng' => 'required|numeric|between:-180,180',
+            'end_lat' => 'required|numeric|between:-90,90',
+            'end_lng' => 'required|numeric|between:-180,180',
+            'radius' => 'numeric|min:1|max:50',
+            'avoid_recent_crimes' => 'boolean',
+            'time_sensitivity_days' => 'numeric|min:1|max:365'
         ]);
 
         $radius = $request->input('radius', 5);
+        $avoidRecentCrimes = $request->input('avoid_recent_crimes', true);
+        $timeSensitivityDays = $request->input('time_sensitivity_days', 30);
 
-        // ✅ 1. Get top 10 crime reports near start location
-        $crimeData = CrimeReport::nearLocation(
+        // Get crime data with time sensitivity
+        $crimeQuery = CrimeReport::nearLocation(
             $request->start_lat,
             $request->start_lng,
             $radius
-        )
+        );
+
+        if ($avoidRecentCrimes) {
+            $crimeQuery->where('incident_date', '>=', now()->subDays($timeSensitivityDays));
+        }
+
+        $crimeData = $crimeQuery
             ->orderBy('severity', 'desc')
-            ->limit(10)
-            ->get(['id','title','severity','latitude','longitude'])
+            ->orderBy('incident_date', 'desc')
+            ->limit(50)
+            ->get(['id', 'title', 'severity', 'latitude', 'longitude', 'incident_date'])
             ->toArray();
 
-        // ✅ 2. Fetch candidate routes from Google Maps Directions API
+        Log::info('Crime data fetched', ['crime_count' => count($crimeData)]);
+
+        // Use Google Routes API (newer API)
+        $mapsKey = env('GOOGLE_MAPS_API_KEY');
+        if (!$mapsKey) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Google Maps API key not configured'
+            ], 500);
+        }
+
+        $routesUrl = "https://routes.googleapis.com/directions/v2:computeRoutes";
+
+        $requestBody = [
+            'origin' => [
+                'location' => [
+                    'latLng' => [
+                        'latitude' => (float)$request->start_lat,
+                        'longitude' => (float)$request->start_lng
+                    ]
+                ]
+            ],
+            'destination' => [
+                'location' => [
+                    'latLng' => [
+                        'latitude' => (float)$request->end_lat,
+                        'longitude' => (float)$request->end_lng
+                    ]
+                ]
+            ],
+            'travelMode' => 'DRIVE',
+            'routingPreference' => 'TRAFFIC_AWARE_OPTIMAL',
+            'computeAlternativeRoutes' => true,
+            'routeModifiers' => [
+                'avoidTolls' => false,
+                'avoidHighways' => false,
+                'avoidFerries' => false
+            ],
+            'languageCode' => 'en-US',
+            'units' => 'METRIC'
+        ];
+
+        Log::info('Calling Google Routes API', ['url' => $routesUrl]);
+
+        $routesResponse = Http::withHeaders([
+            'Content-Type' => 'application/json',
+            'X-Goog-Api-Key' => $mapsKey,
+            'X-Goog-FieldMask' => 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.legs.steps.navigationInstruction,routes.description'
+        ])->timeout(30)->post($routesUrl, $requestBody);
+
+        Log::info('Google Routes API Response', [
+            'status_code' => $routesResponse->status(),
+            'success' => $routesResponse->successful(),
+            'response_preview' => substr($routesResponse->body(), 0, 500) . '...'
+        ]);
+
+        if ($routesResponse->failed()) {
+            // Fallback to legacy Directions API if Routes API fails
+            return $this->fallbackToDirectionsAPI($request, $crimeData);
+        }
+
+        $routesData = $routesResponse->json();
+        $routes = $routesData['routes'] ?? [];
+
+        if (empty($routes)) {
+            Log::warning('No routes found from Google Routes API');
+            return response()->json([
+                'success' => false,
+                'message' => 'No routes found',
+                'api_response' => $routesData
+            ], 404);
+        }
+
+        // Calculate safety scores for each route
+        $routesWithScores = $this->calculateRouteSafetyScores($routes, $crimeData, 'routes_api');
+
+        // Sort by safety score (lower = safer)
+        usort($routesWithScores, function ($a, $b) {
+            return $a['safety_score'] <=> $b['safety_score'];
+        });
+
+        $safestRoute = $routesWithScores[0];
+
+        Log::info('Route safety analysis completed', [
+            'routes_analyzed' => count($routesWithScores),
+            'safest_route_score' => $safestRoute['safety_score']
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'polyline' => $safestRoute['polyline'],
+            'safety_score' => $safestRoute['safety_score'],
+            'route_description' => $safestRoute['description'],
+            'duration' => $safestRoute['duration'],
+            'distance' => $safestRoute['distance'],
+            'crime_analysis' => [
+                'total_crimes_in_area' => count($crimeData),
+                'crimes_near_route' => $safestRoute['crimes_near_route'],
+                'high_severity_crimes' => $safestRoute['high_severity_crimes']
+            ],
+            'alternative_routes' => array_slice($routesWithScores, 1, 2),
+            'api_used' => 'routes_api'
+        ]);
+    }
+
+    /**
+     * Fallback to legacy Directions API if Routes API is not available
+     */
+    private function fallbackToDirectionsAPI(Request $request, array $crimeData): JsonResponse
+    {
+        Log::info('Falling back to Directions API');
+
         $mapsKey = env('GOOGLE_MAPS_API_KEY');
         $directionsUrl = "https://maps.googleapis.com/maps/api/directions/json";
+
         $directionsResponse = Http::get($directionsUrl, [
             'origin' => "{$request->start_lat},{$request->start_lng}",
             'destination' => "{$request->end_lat},{$request->end_lng}",
-            'alternatives' => 'true', // multiple route options
+            'alternatives' => 'true',
+            'mode' => 'driving',
             'key' => $mapsKey,
         ]);
 
         if ($directionsResponse->failed()) {
+            Log::error('Both Routes API and Directions API failed', [
+                'directions_response' => $directionsResponse->body()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to get routes from Google Maps'
+                'message' => 'Failed to get routes from Google Maps APIs. Please enable Directions API in Google Cloud Console.',
+                'directions_api_error' => $directionsResponse->body()
             ], 500);
         }
 
-        $routes = $directionsResponse->json('routes', []);
+        $directionsData = $directionsResponse->json();
+        $routes = $directionsData['routes'] ?? [];
 
-        if (empty($routes)) {
+        if (empty($routes) || ($directionsData['status'] ?? '') !== 'OK') {
             return response()->json([
                 'success' => false,
-                'message' => 'No routes found'
+                'message' => 'No routes found from Directions API',
+                'api_status' => $directionsData['status'] ?? 'unknown',
+                'error_message' => $directionsData['error_message'] ?? 'No error provided'
             ], 404);
         }
 
-        // ✅ 3. Ask Gemini to pick the safest route
-        $apiKey = env('GEMINI_API_KEY');
-        $prompt = "
-        You are a navigation safety AI.
-        Given:
-        - Crime reports: " . json_encode($crimeData) . "
-        - Candidate routes: " . json_encode(array_map(function($r) {
-                        return [
-                            'summary' => $r['summary'] ?? '',
-                            'legs' => $r['legs'] ?? [],
-                            'polyline' => $r['overview_polyline']['points'] ?? ''
-                        ];
-                    }, $routes)) . "
+        // Calculate safety scores using directions API format
+        $routesWithScores = $this->calculateRouteSafetyScores($routes, $crimeData, 'directions_api');
 
-        Task:
-        Select the safest route (avoid high severity crime locations if possible).
-        Return ONLY the Google Maps polyline string of the safest route.
-        ";
+        usort($routesWithScores, function ($a, $b) {
+            return $a['safety_score'] <=> $b['safety_score'];
+        });
 
-        $geminiResponse = Http::withHeaders([
-            'Content-Type' => 'application/json',
-        ])->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={$apiKey}", [
-            'contents' => [
-                [
-                    'parts' => [
-                        ['text' => $prompt]
-                    ]
-                ]
-            ]
-        ]);
-
-        if ($geminiResponse->failed()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to get safer route from Gemini',
-                'crime_data' => $crimeData,
-                'routes' => $routes
-            ], 500);
-        }
-
-        $geminiData = $geminiResponse->json();
-        $aiText = $geminiData['candidates'][0]['content']['parts'][0]['text'] ?? null;
-
-        // Extract polyline string (strip quotes or extra text)
-        preg_match('/"([^"]+)"/', $aiText, $matches);
-        $polyline = $matches[1] ?? trim($aiText);
+        $safestRoute = $routesWithScores[0];
 
         return response()->json([
             'success' => true,
-            'polyline' => $polyline,
-            'crime_data' => $crimeData,
-            'routes' => $routes // optional: return all Google Maps routes for debugging
+            'polyline' => $safestRoute['polyline'],
+            'safety_score' => $safestRoute['safety_score'],
+            'route_description' => $safestRoute['description'],
+            'duration' => $safestRoute['duration'],
+            'distance' => $safestRoute['distance'],
+            'crime_analysis' => [
+                'total_crimes_in_area' => count($crimeData),
+                'crimes_near_route' => $safestRoute['crimes_near_route'],
+                'high_severity_crimes' => $safestRoute['high_severity_crimes']
+            ],
+            'alternative_routes' => array_slice($routesWithScores, 1, 2),
+            'api_used' => 'directions_api_fallback'
         ]);
     }
 
-    private function getCrimeDataAlongRoute($startLat, $startLng, $endLat, $endLng, $radius)
+    /**
+     * Calculate safety scores for routes (works with both APIs)
+     */
+    private function calculateRouteSafetyScores(array $routes, array $crimeData, string $apiType = 'routes_api'): array
     {
-        return CrimeReport::select(['latitude', 'longitude', 'severity', 'title', 'incident_date'])
-            ->where(function($query) use ($startLat, $startLng, $endLat, $endLng, $radius) {
-                $query->nearLocation($startLat, $startLng, $radius)
-                      ->orWhere(function($q) use ($endLat, $endLng, $radius) {
-                          $q->nearLocation($endLat, $endLng, $radius);
-                      });
-            })
-            ->where('status', 'verified')
-            ->orderBy('incident_date', 'desc')
-            ->limit(50)
-            ->get();
-    }
+        $routesWithScores = [];
 
-    private function generateRouteWithAI($crimeData, $routeParams)
-    {
-        $prompt = $this->buildPrompt($crimeData, $routeParams);
-
-        try {
-            $response = $this->geminiClient
-                ->generativeModel('gemini-2.0-flash-exp')
-                ->generateContent(new TextPart($prompt));
-
-            return [
-                'ai_suggestion' => $response->text(),
-                'alternative_waypoints' => $this->extractWaypoints($response->text()),
-                'safety_score' => $this->calculateSafetyScore($crimeData)
-            ];
-        } catch (\Exception $e) {
-            // Check if it's a rate limit error
-            if (str_contains($e->getMessage(), '429') || str_contains($e->getMessage(), 'Quota exceeded')) {
-                return [
-                    'error' => 'API rate limit exceeded. Please try again later.',
-                    'fallback' => $this->generateFallbackRoute($crimeData, $routeParams),
-                    'safety_score' => $this->calculateSafetyScore($crimeData)
-                ];
+        foreach ($routes as $routeIndex => $route) {
+            // Handle different API response formats
+            if ($apiType === 'routes_api') {
+                $polyline = $route['polyline']['encodedPolyline'] ?? '';
+                $duration = $this->formatDuration($route['duration'] ?? '');
+                $distance = $this->formatDistance($route['distanceMeters'] ?? 0);
+                $description = $route['description'] ?? "Route " . ($routeIndex + 1);
+            } else {
+                $polyline = $route['overview_polyline']['points'] ?? '';
+                $duration = $route['legs'][0]['duration']['text'] ?? 'Unknown';
+                $distance = $route['legs'][0]['distance']['text'] ?? 'Unknown';
+                $description = $route['summary'] ?? "Route " . ($routeIndex + 1);
             }
 
-            return [
-                'error' => 'Failed to generate AI route: ' . $e->getMessage(),
-                'fallback' => $this->generateFallbackRoute($crimeData, $routeParams),
-                'safety_score' => $this->calculateSafetyScore($crimeData)
+            if (empty($polyline)) {
+                continue;
+            }
+
+            $polylinePoints = $this->decodePolyline($polyline);
+
+            $safetyScore = 0;
+            $crimesNearRoute = 0;
+            $highSeverityCrimes = 0;
+
+            // Severity weights
+            $severityWeights = [
+                'low' => 1,
+                'medium' => 3,
+                'high' => 5,
+                'critical' => 10
+            ];
+
+            foreach ($crimeData as $crime) {
+                $minDistance = $this->getMinimumDistanceToRoute(
+                    $crime['latitude'],
+                    $crime['longitude'],
+                    $polylinePoints
+                );
+
+                // Crime affects safety if within 1km of route
+                if ($minDistance <= 1.0) {
+                    $crimesNearRoute++;
+
+                    $distanceWeight = max(0, 1 - ($minDistance / 1.0));
+                    $severityWeight = $severityWeights[strtolower($crime['severity'])] ?? 1;
+
+                    // Recent crimes have higher impact
+                    $daysAgo = now()->diffInDays($crime['incident_date']);
+                    $recencyWeight = max(0.1, 1 - ($daysAgo / 365));
+
+                    $crimeImpact = $distanceWeight * $severityWeight * $recencyWeight;
+                    $safetyScore += $crimeImpact;
+
+                    if (in_array(strtolower($crime['severity']), ['high', 'critical'])) {
+                        $highSeverityCrimes++;
+                    }
+                }
+            }
+
+            // Add small penalty for longer routes
+            $routeDistanceKm = $apiType === 'routes_api'
+                ? ($route['distanceMeters'] ?? 0) / 1000
+                : ($route['legs'][0]['distance']['value'] ?? 0) / 1000;
+            $lengthPenalty = $routeDistanceKm * 0.01;
+
+            $finalScore = $safetyScore + $lengthPenalty;
+
+            $routesWithScores[] = [
+                'polyline' => $polyline,
+                'description' => $description,
+                'safety_score' => round($finalScore, 2),
+                'duration' => $duration,
+                'distance' => $distance,
+                'crimes_near_route' => $crimesNearRoute,
+                'high_severity_crimes' => $highSeverityCrimes
             ];
         }
+
+        return $routesWithScores;
     }
 
-    private function generateFallbackRoute($crimeData, $routeParams): string
+    /**
+     * Format duration from Routes API response
+     */
+    private function formatDuration(string $duration): string
     {
-        if ($crimeData->isEmpty()) {
-            return 'No crime reports found in the area. Route appears safe to use.';
+        if (preg_match('/(\d+)s/', $duration, $matches)) {
+            $seconds = intval($matches[1]);
+            $minutes = round($seconds / 60);
+            return $minutes . ' mins';
         }
+        return $duration;
+    }
 
-        $highCrimeAreas = $crimeData->where('severity', 'high')->count();
-        $mediumCrimeAreas = $crimeData->where('severity', 'medium')->count();
-
-        if ($highCrimeAreas > 0) {
-            return "Warning: {$highCrimeAreas} high-severity crime reports found. Consider using main roads, avoid isolated areas, and travel during daylight hours.";
-        } elseif ($mediumCrimeAreas > 0) {
-            return "Caution: {$mediumCrimeAreas} medium-severity crime reports found. Stay on well-lit main roads and remain alert.";
+    /**
+     * Format distance from Routes API response
+     */
+    private function formatDistance(int $distanceMeters): string
+    {
+        if ($distanceMeters > 0) {
+            $km = round($distanceMeters / 1000, 1);
+            return $km . ' km';
         }
-
-        return 'Low crime activity detected. Exercise normal precautions.';
+        return 'Unknown';
     }
 
-    private function buildPrompt($crimeData, $routeParams): string
+    /**
+     * Calculate minimum distance from point to route
+     */
+    private function getMinimumDistanceToRoute(float $lat, float $lng, array $routePoints): float
     {
-        $crimeInfo = $crimeData->map(function($crime) {
-            return "Severity: {$crime->severity}, Type: {$crime->title}, Location: {$crime->latitude},{$crime->longitude}";
-        })->implode('; ');
-
-        return "Given the following crime data along a route from ({$routeParams['start_lat']},{$routeParams['start_lng']}) to ({$routeParams['end_lat']},{$routeParams['end_lng']}):
-
-Crime Reports: {$crimeInfo}
-
-Please suggest alternative waypoints or route modifications to avoid high-crime areas. Provide specific latitude/longitude coordinates for safer waypoints and explain the reasoning. Focus on well-lit main roads and populated areas.";
+        $minDistance = PHP_FLOAT_MAX;
+        foreach ($routePoints as $point) {
+            $distance = $this->calculateHaversineDistance($lat, $lng, $point['lat'], $point['lng']);
+            $minDistance = min($minDistance, $distance);
+        }
+        return $minDistance;
     }
 
-    private function extractWaypoints($aiResponse): array
+    /**
+     * Decode polyline to coordinate points
+     */
+    private function decodePolyline(string $encoded): array
     {
-        preg_match_all('/(-?\d+\.\d+),\s*(-?\d+\.\d+)/', $aiResponse, $matches, PREG_SET_ORDER);
+        $points = [];
+        $index = 0;
+        $len = strlen($encoded);
+        $lat = 0;
+        $lng = 0;
 
-        $waypoints = [];
-        foreach ($matches as $match) {
-            $waypoints[] = [
-                'lat' => (float)$match[1],
-                'lng' => (float)$match[2]
+        while ($index < $len) {
+            $b = 0;
+            $shift = 0;
+            $result = 0;
+            do {
+                $b = ord($encoded[$index++]) - 63;
+                $result |= ($b & 0x1f) << $shift;
+                $shift += 5;
+            } while ($b >= 0x20);
+            $dlat = (($result & 1) ? ~($result >> 1) : ($result >> 1));
+            $lat += $dlat;
+
+            $shift = 0;
+            $result = 0;
+            do {
+                $b = ord($encoded[$index++]) - 63;
+                $result |= ($b & 0x1f) << $shift;
+                $shift += 5;
+            } while ($b >= 0x20);
+            $dlng = (($result & 1) ? ~($result >> 1) : ($result >> 1));
+            $lng += $dlng;
+
+            $points[] = [
+                'lat' => $lat / 1E5,
+                'lng' => $lng / 1E5
             ];
         }
-
-        return $waypoints;
+        return $points;
     }
 
-    private function calculateSafetyScore($crimeData): int
+    /**
+     * Calculate distance using Haversine formula
+     */
+    private function calculateHaversineDistance(float $lat1, float $lng1, float $lat2, float $lng2): float
     {
-        if ($crimeData->isEmpty()) return 100;
-
-        $severityWeights = ['low' => 1, 'medium' => 3, 'high' => 5];
-        $totalScore = $crimeData->sum(function($crime) use ($severityWeights) {
-            return $severityWeights[strtolower($crime->severity)] ?? 2;
-        });
-
-        return max(0, 100 - ($totalScore * 2));
+        $earthRadius = 6371;
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLng = deg2rad($lng2 - $lng1);
+        $a = sin($dLat / 2) * sin($dLat / 2) + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLng / 2) * sin($dLng / 2);
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+        return $earthRadius * $c;
     }
+
+
 }

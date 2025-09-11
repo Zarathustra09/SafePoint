@@ -22,6 +22,10 @@ Route::middleware('auth:sanctum')->get('/user', [AuthController::class, 'getUser
 
 
 Route::post('/safer-route', [AIController::class, 'generateSaferRoute']);
+Route::post('/test-google-maps', [AIController::class, 'testGoogleMaps']);
+Route::post('/test-gemini', [AIController::class, 'testGemini']);
+Route::get('/test-both-apis', [AIController::class, 'testBothAPIs']);
+Route::post('/safer-route-debug', [AIController::class, 'generateSaferRouteDebug']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile', [App\Http\Controllers\Api\ProfileController::class, 'show']);
