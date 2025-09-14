@@ -113,9 +113,9 @@
                                 </div>
                             @endif
 
-                            <div class="text-center mt-3">
-                                <p>Don't have an account? <a href="{{ route('register') }}" class="site-footer-link">Sign Up</a></p>
-                            </div>
+{{--                            <div class="text-center mt-3">--}}
+{{--                                <p>Don't have an account? <a href="{{ route('register') }}" class="site-footer-link">Sign Up</a></p>--}}
+{{--                            </div>--}}
                         </form>
                     </div>
                 </div>

@@ -32,6 +32,17 @@ class LoginController extends Controller
      *
      * @return void
      */
+
+    protected function authenticated($request, $user)
+    {
+        if (!$user->hasRole('Admin')) {
+            auth()->logout();
+            return redirect('/login')->withErrors([
+                'email' => 'Access denied. Only Admins can log in.',
+            ]);
+        }
+    }
+
     public function __construct()
     {
         $this->middleware('guest')->except('logout');

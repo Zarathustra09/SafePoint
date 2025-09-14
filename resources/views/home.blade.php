@@ -10,23 +10,9 @@
 
     <div class="row g-4">
         <!-- File a Report Card -->
-        <div class="col-xl-3 col-lg-4 col-md-6">
-            <div class="card h-100">
-                <div class="card-body text-center">
-                    <div class="avatar avatar-md mx-auto mb-3">
-                        <span class="avatar-initial rounded bg-label-primary">
-                            <i class="bx bxs-plus-square bx-md"></i>
-                        </span>
-                    </div>
-                    <h5 class="card-title mb-2">File a Report</h5>
-                    <p class="card-text">Submit incident reports and documentation for community safety.</p>
-                    <a href="#" class="btn btn-primary">Create Report</a>
-                </div>
-            </div>
-        </div>
 
         <!-- View Map Card -->
-        <div class="col-xl-3 col-lg-4 col-md-6">
+        <div class="col-xl-4 col-lg-4 col-md-6">
             <div class="card h-100">
                 <div class="card-body text-center">
                     <div class="avatar avatar-md mx-auto mb-3">
@@ -36,13 +22,13 @@
                     </div>
                     <h5 class="card-title mb-2">View Map</h5>
                     <p class="card-text">Explore interactive maps and location-based information.</p>
-                    <a href="#" class="btn btn-info">Open Map</a>
+                    <a href="{{route('reports.index')}}" class="btn btn-info">Open Map</a>
                 </div>
             </div>
         </div>
 
         <!-- Crime Reports Card -->
-        <div class="col-xl-3 col-lg-4 col-md-6">
+        <div class="col-xl-4 col-lg-4 col-md-6">
             <div class="card h-100">
                 <div class="card-body text-center">
                     <div class="avatar avatar-md mx-auto mb-3">
@@ -52,29 +38,14 @@
                     </div>
                     <h5 class="card-title mb-2">Crime Reports</h5>
                     <p class="card-text">Access and review crime incident reports and statistics.</p>
-                    <a href="#" class="btn btn-warning">View Reports</a>
+                    <a href="{{route('reports.list')}}" class="btn btn-warning">View Reports</a>
                 </div>
             </div>
         </div>
 
-        <!-- Community Portal Moderation Card -->
-        <div class="col-xl-3 col-lg-4 col-md-6">
-            <div class="card h-100">
-                <div class="card-body text-center">
-                    <div class="avatar avatar-md mx-auto mb-3">
-                        <span class="avatar-initial rounded bg-label-secondary">
-                            <i class="bx bx-cog bx-md"></i>
-                        </span>
-                    </div>
-                    <h5 class="card-title mb-2">Portal Moderation</h5>
-                    <p class="card-text">Manage and moderate community portal content and users.</p>
-                    <a href="#" class="btn btn-secondary">Moderate</a>
-                </div>
-            </div>
-        </div>
 
         <!-- Announcements Card -->
-        <div class="col-xl-3 col-lg-4 col-md-6">
+        <div class="col-xl-4 col-lg-4 col-md-6">
             <div class="card h-100">
                 <div class="card-body text-center">
                     <div class="avatar avatar-md mx-auto mb-3">
@@ -84,34 +55,20 @@
                     </div>
                     <h5 class="card-title mb-2">Announcements</h5>
                     <p class="card-text">Create and manage community announcements and notifications.</p>
-                    <a href="#" class="btn btn-success">Manage</a>
+                    <a href="{{route('announcements.index')}}" class="btn btn-success">Manage</a>
                 </div>
             </div>
         </div>
 
         <!-- Recent Activity Card -->
-        <div class="col-xl-7 col-lg-8">
-            <div class="card">
-                <div class="card-header d-flex align-items-center justify-content-between">
-                    <h5 class="card-title m-0">Recent Activity</h5>
-                    <small class="text-muted">Last 7 days</small>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span>Reports Filed</span>
-                        <span class="badge bg-primary">12</span>
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title m-0">Crime Reports Status Overview</h5>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span>Maps Accessed</span>
-                        <span class="badge bg-info">45</span>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span>Crime Reports Reviewed</span>
-                        <span class="badge bg-warning">8</span>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span>Announcements Posted</span>
-                        <span class="badge bg-success">3</span>
+                    <div class="card-body">
+                        <canvas id="statusChart" height="100"></canvas>
                     </div>
                 </div>
             </div>
@@ -119,3 +76,36 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const statusLabels = ['pending', 'under_investigation', 'resolved', 'closed'];
+        const statusData = [
+            {{ $statusCounts['pending'] ?? 0 }},
+            {{ $statusCounts['under_investigation'] ?? 0 }},
+            {{ $statusCounts['resolved'] ?? 0 }},
+            {{ $statusCounts['closed'] ?? 0 }}
+        ];
+        const ctx = document.getElementById('statusChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: statusLabels,
+                datasets: [{
+                    label: 'Reports (Last 7 Days)',
+                    data: statusData,
+                    backgroundColor: [
+                        '#696cff', '#03c3ec', '#ffab00', '#71dd37'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    </script>
+@endpush
