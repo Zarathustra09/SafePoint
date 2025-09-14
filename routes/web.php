@@ -10,18 +10,19 @@ Route::get('/', function () {
     return view('auth.login');
 });
 
-Auth::routes();
+Auth::routes(['register' => false]);
+Route::middleware(['auth', 'role:Admin'])->group(function () {
+    Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 
-Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
-
-Route::get('/reports/list', [CrimeReportController::class, 'list'])->name('reports.list');
-Route::resource('/reports', CrimeReportController::class);
+    Route::get('/reports/list', [CrimeReportController::class, 'list'])->name('reports.list');
+    Route::resource('/reports', CrimeReportController::class);
 
 
 
-Route::put('/announcements/{announcement}/image/{imageId}', [AnnouncementController::class, 'updateImage']);
-Route::delete('/announcements/{announcement}/image/{imageId}', [AnnouncementController::class, 'deleteImage']);
-Route::resource('/announcements', AnnouncementController::class);
+    Route::put('/announcements/{announcement}/image/{imageId}', [AnnouncementController::class, 'updateImage']);
+    Route::delete('/announcements/{announcement}/image/{imageId}', [AnnouncementController::class, 'deleteImage']);
+    Route::resource('/announcements', AnnouncementController::class);
+});
 
 
 // Fix the routes order to prioritize named routes before parameter routes
