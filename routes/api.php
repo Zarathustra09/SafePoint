@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AIController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\SavedRouteController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -33,5 +34,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/profile/upload-image', [App\Http\Controllers\Api\ProfileController::class, 'uploadImage']);
     Route::delete('/profile/reset-image', [App\Http\Controllers\Api\ProfileController::class, 'resetImage']);
     Route::delete('/profile', [App\Http\Controllers\Api\ProfileController::class, 'destroy']);
+
+
+    Route::apiResource('saved-routes', SavedRouteController::class);
+    Route::get('saved-routes-stats', [SavedRouteController::class, 'stats']);
 });
 
