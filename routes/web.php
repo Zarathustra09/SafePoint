@@ -3,6 +3,7 @@
 use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\WebApi\AnnouncementController;
 use App\Http\Controllers\WebApi\CrimeReportController;
+use App\Http\Controllers\WebApi\RoleController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -40,3 +41,7 @@ Route::prefix('approval')->middleware(['auth'])->group(function () {
     Route::post('/{user}/reject', [ApprovalController::class, 'reject'])->name('approval.reject');
 });
 
+Route::middleware(['auth'])->group(function () {
+    Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
+    Route::post('/roles/{user}/assign-admin', [RoleController::class, 'assignAdmin'])->name('roles.assignAdmin');
+});

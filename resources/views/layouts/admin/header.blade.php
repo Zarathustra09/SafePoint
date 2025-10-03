@@ -48,12 +48,6 @@
 
         <li class="menu-header small text-uppercase"><span class="menu-header-text">Moderation</span></li>
 
-        <li class="menu-item">
-            <a href="#" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-cog"></i>
-                <div data-i18n="My Workspaces">Community Portal Moderation</div>
-            </a>
-        </li>
 
         <li class="menu-item {{ request()->routeIs('announcements.*') ? ' active' : '' }}">
             <a href="{{route('announcements.index')}}" class="menu-link">
@@ -67,10 +61,15 @@
         <li class="menu-item {{ request()->routeIs('approval.*') ? ' active' : '' }}">
             <a href="{{route('approval.index')}}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-user"></i>
-                <div data-i18n="My Workspaces">Manage Users</div>
+                <div data-i18n="My Workspaces">Manage Approvals</div>
             </a>
         </li>
 
-
+        <li class="menu-item" {{request()->routeIs('roles.index') ? ' active' : '' }}>
+            <a href="{{route('roles.index')}}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-cog"></i>
+                <div data-i18n="My Workspaces">Role Administration</div>
+            </a>
+        </li>
     </ul>
 </aside>

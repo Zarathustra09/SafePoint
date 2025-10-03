@@ -102,6 +102,21 @@
             });
         </script>
     @endif
+
+    <style>
+        /* DataTable search bar spacing */
+        .dataTables_wrapper .dataTables_filter {
+            margin-bottom: 20px;
+        }
+
+        .dataTables_wrapper .dataTables_length {
+            margin-bottom: 15px;
+        }
+
+        .dataTables_wrapper .row:first-child {
+            margin-bottom: 20px;
+        }
+    </style>
 @endsection
 
 @push('scripts')
