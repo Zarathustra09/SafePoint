@@ -11,7 +11,7 @@
                             <small class="text-muted">Add a new announcement</small>
                         </div>
                         <div>
-                            <a href="{{ route('announcements.index') }}" class="btn btn-secondary">
+                            <a href="{{ route('reports.list') }}" class="btn btn-secondary">
                                 <i class='bx bx-arrow-back'></i> Back to List
                             </a>
                         </div>
