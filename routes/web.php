@@ -44,4 +44,5 @@ Route::prefix('approval')->middleware(['auth'])->group(function () {
 Route::middleware(['auth'])->group(function () {
     Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
     Route::post('/roles/{user}/assign-admin', [RoleController::class, 'assignAdmin'])->name('roles.assignAdmin');
+    Route::post('/roles/{user}/demote-admin', [RoleController::class, 'demoteAdmin'])->name('roles.demoteAdmin');
 });

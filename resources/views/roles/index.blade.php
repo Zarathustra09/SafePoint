@@ -61,9 +61,13 @@
                                                                 </button>
                                                             </form>
                                                         @else
-                                                            <span class="badge bg-success">
-                                                                <i class="bx bx-check"></i> Admin Assigned
-                                                            </span>
+                                                            <form method="POST" action="{{ route('roles.demoteAdmin', $user->id) }}" style="display: inline;">
+                                                                @csrf
+                                                                <button type="submit" class="btn btn-danger btn-sm"
+                                                                        onclick="return confirm('Are you sure you want to demote {{ $user->name }} from Admin?')">
+                                                                    <i class="bx bx-user-minus"></i> Demote Admin
+                                                                </button>
+                                                            </form>
                                                         @endif
                                                     </div>
                                                 </td>
@@ -93,6 +97,28 @@
                 alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
                 alertDiv.innerHTML = `
                     <strong>Success!</strong> {{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.body.appendChild(alertDiv);
+
+                // Auto dismiss after 5 seconds
+                setTimeout(() => {
+                    if (alertDiv.parentNode) {
+                        alertDiv.remove();
+                    }
+                }, 5000);
+            });
+        </script>
+    @endif
+
+    @if(session('info'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-info alert-dismissible fade show position-fixed';
+                alertDiv.style.cssText = 'top: 70px; right: 20px; z-index: 9999; min-width: 300px;';
+                alertDiv.innerHTML = `
+                    <strong>Notice!</strong> {{ session('info') }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 `;
                 document.body.appendChild(alertDiv);

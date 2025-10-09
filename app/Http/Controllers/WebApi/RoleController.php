@@ -23,4 +23,22 @@ class RoleController extends Controller
         $user->assignRole($adminRole);
         return Redirect::back()->with('success', 'Admin role assigned successfully.');
     }
+
+    public function demoteAdmin(Request $request, $userId)
+    {
+        $user = User::findOrFail($userId);
+        $adminRole = Role::where('name', 'Admin')->first();
+
+        // Count current admins
+        $adminCount = User::role('Admin')->count();
+
+        if ($adminRole && $user->hasRole($adminRole)) {
+            if ($adminCount <= 1) {
+                return Redirect::back()->with('info', 'At least one Admin is required.');
+            }
+            $user->removeRole($adminRole);
+            return Redirect::back()->with('success', 'Admin role removed successfully.');
+        }
+        return Redirect::back()->with('success', 'User is not an Admin.');
+    }
 }
