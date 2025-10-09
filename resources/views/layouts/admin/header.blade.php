@@ -1,8 +1,8 @@
 <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
     <div class="app-brand demo">
-        <a href="#" class="app-brand-link">
+        <a href="{{route('home')}}" class="app-brand-link">
               <span class="app-brand-logo demo">
-        <img src="{{ asset('coworkly.png') }}" alt="{{env('APP_NAME')}}" class="app-brand-logo" width="75">
+        <img src="{{ asset('logo.png') }}" alt="{{env('APP_NAME')}}" class="app-brand-logo" width="75">
               </span>
             <span class="app-brand-text demo menu-text fw-bolder ms-2">{{env('APP_NAME')}}</span>
         </a>
