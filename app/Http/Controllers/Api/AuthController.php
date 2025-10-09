@@ -11,6 +11,17 @@ class AuthController extends Controller
 {
     public function login(Request $request)
     {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'password' => 'required',
+            'fcm_token' => 'nullable|string',
+            'device_type' => 'nullable|string|in:android,ios,web'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
         $credentials = $request->only('email', 'password');
         \Log::info('Login attempt', ['email' => $credentials['email']]);
 
@@ -21,9 +32,23 @@ class AuthController extends Controller
                 Auth::logout();
                 return response()->json(['error' => 'Account not verified'], 403);
             }
+
             $token = $user->createToken('authToken')->plainTextToken;
-            \Log::info('token', ['token' => $token]);
-            return response()->json(['token' => $token, 'user_id' => $user->id], 200);
+
+            if ($request->fcm_token) {
+                $user->addDeviceToken($request->fcm_token, $request->device_type);
+                \Log::info('FCM token registered on login', [
+                    'user_id' => $user->id,
+                    'device_type' => $request->device_type
+                ]);
+            }
+
+            \Log::info('Successful login', ['user_id' => $user->id]);
+            return response()->json([
+                'token' => $token,
+                'user_id' => $user->id,
+                'user' => $user
+            ], 200);
         }
 
         \Log::warning('Unauthorized login attempt', ['email' => $credentials['email']]);
@@ -37,6 +62,8 @@ class AuthController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
             'valid_id_image' => 'required|file|mimes:jpeg,png,jpg',
+            'fcm_token' => 'nullable|string',
+            'device_type' => 'nullable|string|in:android,ios,web'
         ]);
 
         if ($validator->fails()) {
@@ -57,6 +84,14 @@ class AuthController extends Controller
 
         $token = $user->createToken('authToken')->plainTextToken;
 
+        if ($request->fcm_token) {
+            $user->addDeviceToken($request->fcm_token, $request->device_type);
+            \Log::info('FCM token registered on registration', [
+                'user_id' => $user->id,
+                'device_type' => $request->device_type
+            ]);
+        }
+
         return response()->json([
             'success' => true,
             'token' => $token,
@@ -67,5 +102,21 @@ class AuthController extends Controller
     public function getUser(Request $request)
     {
         return response()->json($request->user());
+    }
+
+    public function logout(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Already logged out'], 200);
+        }
+
+        if ($request->fcm_token) {
+            $user->removeDeviceToken($request->fcm_token);
+        }
+
+        $user->currentAccessToken()->delete();
+
+        return response()->json(['message' => 'Logged out successfully']);
     }
 }

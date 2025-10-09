@@ -40,3 +40,40 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('saved-routes-stats', [SavedRouteController::class, 'stats']);
 });
 
+
+
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/device-token', function (Request $request) {
+            $data = $request->validate([
+                'token' => 'required|string',
+                'device_type' => 'nullable|string'
+            ]);
+
+            $user = $request->user();
+            if (!$user) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+            }
+
+            $user->addDeviceToken($data['token'], $data['device_type'] ?? null);
+
+            return response()->json(['success' => true, 'message' => 'Device token registered']);
+        });
+
+        Route::delete('/device-token', function (Request $request) {
+            $data = $request->validate([
+                'token' => 'required|string'
+            ]);
+
+            $user = $request->user();
+            if (!$user) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+            }
+
+            $user->removeDeviceToken($data['token']);
+
+            return response()->json(['success' => true, 'message' => 'Device token removed']);
+        });
+    });
+
+

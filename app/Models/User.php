@@ -50,4 +50,23 @@ class User extends Authenticatable
         return $this->hasMany(CrimeReport::class, 'reported_by');
     }
 
+    // Add this to your existing User model
+    public function deviceTokens()
+    {
+        return $this->hasMany(UserDeviceToken::class);
+    }
+
+    public function addDeviceToken($token, $deviceType = null)
+    {
+        return $this->deviceTokens()->updateOrCreate(
+            ['token' => $token],
+            ['device_type' => $deviceType]
+        );
+    }
+
+    public function removeDeviceToken($token)
+    {
+        return $this->deviceTokens()->where('token', $token)->delete();
+    }
+
 }

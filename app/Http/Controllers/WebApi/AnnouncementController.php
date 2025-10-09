@@ -4,12 +4,22 @@ namespace App\Http\Controllers\WebApi;
 
 use App\Http\Controllers\Controller;
 use App\Models\Announcement;
+use App\Models\UserDeviceToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-
+use Kreait\Firebase\Contract\Messaging;
+use Kreait\Firebase\Messaging\CloudMessage;
+use Kreait\Firebase\Messaging\Notification;
+use Kreait\Firebase\Exception\MessagingException;
 class AnnouncementController extends Controller
 {
+    private $messaging;
+
+    public function __construct(Messaging $messaging)
+    {
+        $this->messaging = $messaging;
+    }
     /**
      * Display a listing of the resource.
      */
@@ -31,6 +41,8 @@ class AnnouncementController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -49,7 +61,7 @@ class AnnouncementController extends Controller
                 $imageData[] = [
                     'id' => uniqid(),
                     'path' => $path,
-                    'is_featured' => $index === 0, // First image is featured
+                    'is_featured' => $index === 0,
                     'order' => $index,
                 ];
             }
@@ -61,8 +73,71 @@ class AnnouncementController extends Controller
             'images' => $imageData,
         ]);
 
-        return redirect()->route('announcements.index')
-            ->with('success', 'Announcement created successfully.');
+        // Send Firebase notification to all devices
+        $this->sendAnnouncementNotification($announcement);
+
+        return response()->json([
+            'success' => true,
+            'announcement' => $announcement->load('user'),
+            'message' => 'Announcement created and notifications sent successfully.'
+        ], 201);
+    }
+
+    private function sendAnnouncementNotification(Announcement $announcement)
+    {
+        try {
+            // Get all device tokens
+            $tokens = UserDeviceToken::pluck('token')->toArray();
+
+            if (empty($tokens)) {
+                \Log::info('No device tokens found for announcement notification');
+                return;
+            }
+
+            $notification = Notification::create(
+                'New Announcement: ' . $announcement->title,
+                substr($announcement->description, 0, 100) . (strlen($announcement->description) > 100 ? '...' : '')
+            );
+
+            $message = CloudMessage::new()
+                ->withNotification($notification)
+                ->withData([
+                    'type' => 'announcement',
+                    'announcement_id' => (string) $announcement->id,
+                    'title' => $announcement->title,
+                    'created_at' => $announcement->created_at->toISOString()
+                ]);
+
+            $report = $this->messaging->sendMulticast($message, $tokens);
+
+            \Log::info('Announcement notification sent', [
+                'announcement_id' => $announcement->id,
+                'successful_sends' => $report->successes()->count(),
+                'failed_sends' => $report->failures()->count(),
+                'total_tokens' => count($tokens)
+            ]);
+
+            // Remove invalid tokens
+            if ($report->hasFailures()) {
+                foreach ($report->failures()->getItems() as $failure) {
+                    if ($failure->error()->code() === 'INVALID_ARGUMENT' ||
+                        $failure->error()->code() === 'UNREGISTERED') {
+                        UserDeviceToken::where('token', $failure->target()->value())->delete();
+                    }
+                }
+            }
+
+        } catch (MessagingException $e) {
+            \Log::error('Firebase messaging error for announcement', [
+                'announcement_id' => $announcement->id,
+                'error' => $e->getMessage()
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('General error sending announcement notification', [
+                'announcement_id' => $announcement->id,
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 
     /**
