@@ -60,19 +60,6 @@
             </div>
         </div>
 
-        <!-- Recent Activity Card -->
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title m-0">Crime Reports Status Overview</h5>
-                    </div>
-                    <div class="card-body">
-                        <canvas id="statusChart" height="100"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 @endsection

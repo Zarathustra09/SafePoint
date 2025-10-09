@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <style>
        .map-background {
            position: absolute;
@@ -94,7 +95,12 @@
 
                             <div class="mb-3">
                                 <label for="password" class="form-label">{{ __('Password') }}</label>
-                                <input id="password" type="password" class="form-control @error('password') is-invalid @enderror" name="password" required autocomplete="new-password">
+                                <div class="position-relative">
+                                    <input id="password" type="password" class="form-control @error('password') is-invalid @enderror" name="password" required autocomplete="new-password">
+                                    <button type="button" class="btn btn-link position-absolute end-0 top-50 translate-middle-y" onclick="togglePassword()" style="text-decoration: none; z-index: 10;">
+                                        <i id="toggleIcon" class="bi bi-eye-slash"></i>
+                                    </button>
+                                </div>
                                 @error('password')
                                 <span class="invalid-feedback" role="alert">
                                     <strong>{{ $message }}</strong>
@@ -104,7 +110,12 @@
 
                             <div class="mb-3">
                                 <label for="password-confirm" class="form-label">{{ __('Confirm Password') }}</label>
-                                <input id="password-confirm" type="password" class="form-control" name="password_confirmation" required autocomplete="new-password">
+                                <div class="position-relative">
+                                    <input id="password-confirm" type="password" class="form-control" name="password_confirmation" required autocomplete="new-password">
+                                    <button type="button" class="btn btn-link position-absolute end-0 top-50 translate-middle-y" onclick="toggleConfirmPassword()" style="text-decoration: none; z-index: 10;">
+                                        <i id="toggleConfirmIcon" class="bi bi-eye-slash"></i>
+                                    </button>
+                                </div>
                             </div>
 
                             <div class="d-grid">
@@ -122,4 +133,36 @@
             </div>
         </div>
     </section>
+
+    <script>
+        function togglePassword() {
+            const passwordField = document.getElementById('password');
+            const toggleIcon = document.getElementById('toggleIcon');
+
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                toggleIcon.classList.remove('bi-eye-slash');
+                toggleIcon.classList.add('bi-eye');
+            } else {
+                passwordField.type = 'password';
+                toggleIcon.classList.remove('bi-eye');
+                toggleIcon.classList.add('bi-eye-slash');
+            }
+        }
+
+        function toggleConfirmPassword() {
+            const confirmField = document.getElementById('password-confirm');
+            const toggleConfirmIcon = document.getElementById('toggleConfirmIcon');
+
+            if (confirmField.type === 'password') {
+                confirmField.type = 'text';
+                toggleConfirmIcon.classList.remove('bi-eye-slash');
+                toggleConfirmIcon.classList.add('bi-eye');
+            } else {
+                confirmField.type = 'password';
+                toggleConfirmIcon.classList.remove('bi-eye');
+                toggleConfirmIcon.classList.add('bi-eye-slash');
+            }
+        }
+    </script>
 @endsection
