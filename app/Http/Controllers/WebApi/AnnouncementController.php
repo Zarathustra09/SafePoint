@@ -53,11 +53,9 @@ class AnnouncementController extends Controller
         ]);
 
         $imageData = [];
-
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $index => $image) {
                 $path = $image->store('announcements', 'public');
-
                 $imageData[] = [
                     'id' => uniqid(),
                     'path' => $path,
@@ -67,20 +65,27 @@ class AnnouncementController extends Controller
             }
         }
 
-        $announcement = Auth::user()->announcements()->create([
+        $announcement = \Auth::user()->announcements()->create([
             'title' => $validated['title'],
             'description' => $validated['description'],
             'images' => $imageData,
         ]);
 
-        // Send Firebase notification to all devices
         $this->sendAnnouncementNotification($announcement);
 
-        return response()->json([
-            'success' => true,
-            'announcement' => $announcement->load('user'),
-            'message' => 'Announcement created and notifications sent successfully.'
-        ], 201);
+        // If the client expects JSON (API/AJAX), keep JSON response
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'announcement' => $announcement->load('user'),
+                'message' => 'Announcement created and notifications sent successfully.'
+            ], 201);
+        }
+
+        // Otherwise redirect back to index (your Blade uses session flash)
+        return redirect()
+            ->route('announcements.index')
+            ->with('success', 'Announcement created successfully.');
     }
 
     private function sendAnnouncementNotification(Announcement $announcement)
