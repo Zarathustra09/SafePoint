@@ -47,7 +47,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/device-token', function (Request $request) {
             $data = $request->validate([
                 'token' => 'required|string',
-                'device_type' => 'nullable|string'
+                'device_type' => 'nullable|string|in:android,ios,web',
+                'timestamp' => 'nullable|date'
             ]);
 
             $user = $request->user();
@@ -55,7 +56,8 @@ Route::middleware('auth:sanctum')->group(function () {
                 return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
             }
 
-            $user->addDeviceToken($data['token'], $data['device_type'] ?? null);
+            $timestamp = isset($data['timestamp']) ? \Carbon\Carbon::parse($data['timestamp']) : now();
+            $user->addDeviceToken($data['token'], $data['device_type'] ?? null, $timestamp);
 
             return response()->json(['success' => true, 'message' => 'Device token registered']);
         });
@@ -74,6 +76,103 @@ Route::middleware('auth:sanctum')->group(function () {
 
             return response()->json(['success' => true, 'message' => 'Device token removed']);
         });
+
+        Route::post('/device-token/refresh', function (Request $request) {
+            $user = $request->user();
+            if (!$user) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+            }
+
+            $staleTokensRemoved = $user->removeStaleTokens();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Token refresh completed',
+                'stale_tokens_removed' => $staleTokensRemoved
+            ]);
+        });
+
+
     });
-
-
+//// Debug: send a direct test notification to verify delivery end-to-end
+//Route::post('/debug/send-test-notification', function (Request $request) {
+//    $data = $request->validate([
+//        'title' => 'nullable|string',
+//        'body' => 'nullable|string',
+//    ]);
+//
+////    $user = $request->user();
+////    if (!$user) {
+////        return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+////    }
+//
+//    // Fetch all active device tokens
+//    $tokens = \App\Models\UserDeviceToken::getAllActiveTokens();
+//    if (empty($tokens)) {
+//        return response()->json(['success' => false, 'message' => 'No active device tokens found'], 404);
+//    }
+//
+//    $title = $data['title'] ?? 'Test Notification';
+//    $body = $data['body'] ?? 'This is a test push to all active tokens.';
+//
+//    /** @var \Kreait\Firebase\Contract\Messaging $messaging */
+//    $messaging = app(\Kreait\Firebase\Contract\Messaging::class);
+//
+//    $notification = \Kreait\Firebase\Messaging\Notification::create($title, $body);
+//
+//    $androidConfig = \Kreait\Firebase\Messaging\AndroidConfig::fromArray([
+//        'priority' => 'high',
+//        'ttl' => '3600s',
+//        'notification' => [
+//            'sound' => 'default',
+//            'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+//            'tag' => 'debug',
+//        ],
+//    ]);
+//
+//    $apnsConfig = \Kreait\Firebase\Messaging\ApnsConfig::fromArray([
+//        'headers' => [
+//            'apns-push-type' => 'alert',
+//            'apns-priority' => '10',
+//        ],
+//        'payload' => [
+//            'aps' => [
+//                'sound' => 'default',
+//                'content-available' => 1,
+//                'mutable-content' => 1,
+//                'category' => 'debug',
+//            ],
+//        ],
+//    ]);
+//
+//    $message = \Kreait\Firebase\Messaging\CloudMessage::new()
+//        ->withNotification($notification)
+//        ->withAndroidConfig($androidConfig)
+//        ->withApnsConfig($apnsConfig)
+//        ->withData([
+//            'type' => 'debug_broadcast',
+//            'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+//        ]);
+//
+//    try {
+//        $report = $messaging->sendMulticast($message, $tokens);
+//
+//        // Touch success tokens
+//        $successTokens = array_map(
+//            fn ($s) => $s->target()->value(),
+//            $report->successes()->getItems()
+//        );
+//        if (!empty($successTokens)) {
+//            \App\Models\UserDeviceToken::touchTokens($successTokens);
+//        }
+//
+//        return response()->json([
+//            'success' => true,
+//            'successful_sends' => $report->successes()->count(),
+//            'failed_sends' => $report->failures()->count(),
+//            'total_tokens' => count($tokens),
+//        ]);
+//    } catch (\Throwable $e) {
+//        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+//    }
+//});
