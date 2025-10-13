@@ -34,6 +34,9 @@
     <!-- Favicon -->
     <link rel="icon" href="{{ asset('new-icon.png') }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    @auth
+    <meta name="api-token" content="{{ auth()->user()->createToken('web-token')->plainTextToken }}">
+    @endauth
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

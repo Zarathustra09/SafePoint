@@ -15,6 +15,8 @@ Route::middleware('auth:sanctum')->get('/my-reports', [App\Http\Controllers\Api\
 Route::middleware('auth:sanctum')->apiResource('crime-reports', App\Http\Controllers\Api\CrimeReportController::class);
 Route::middleware('auth:sanctum')->apiResource('announcements', App\Http\Controllers\Api\AnnouncementController::class);
 
+// Nested comment routes for announcements
+Route::middleware('auth:sanctum')->apiResource('announcements.comments', App\Http\Controllers\Api\CommentController::class)->shallow();
 
 
 Route::post('/login', [AuthController::class, 'login']);
