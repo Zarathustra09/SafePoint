@@ -51,6 +51,42 @@
                                     </a>
                                 @endif
 
+                                <!-- Comments Preview Section -->
+                                @if($announcement->comments->count() > 0)
+                                    <div class="card-body pt-0 pb-2">
+                                        <div class="comments-preview">
+                                            {{-- <div class="d-flex align-items-center mb-2">
+                                                <i class='bx bx-comment-dots me-2 text-muted'></i>
+                                                <small class="text-muted fw-bold">Recent Comments ({{ $announcement->comments->count() }})</small>
+                                            </div> --}}
+
+                                            @foreach($announcement->comments->take(5) as $comment)
+                                                <div class="comment-item-preview mb-2 ps-3 border-start border-2 border-light">
+                                                    <div class="d-flex align-items-start">
+                                                        <div class="flex-grow-1">
+                                                            <div class="d-flex align-items-center">
+                                                                <strong class="me-2" style="font-size: 0.875rem;">{{ $comment->user->name ?? 'Unknown' }}</strong>
+                                                                <small class="text-muted" style="font-size: 0.75rem;">
+                                                                    {{ $comment->created_at->diffForHumans() }}
+                                                                </small>
+                                                            </div>
+                                                            <p class="mb-0 text-muted" style="font-size: 0.875rem;">
+                                                                {{ Str::limit($comment->content, 100) }}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+
+                                            @if($announcement->comments->count() >= 5)
+                                                <a href="{{ route('announcements.show', $announcement) }}#commentsList" class="btn btn-sm btn-link text-decoration-none ps-3">
+                                                    View all comments <i class='bx bx-chevron-right'></i>
+                                                </a>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endif
+
                                 <div class="card-footer bg-white border-top-0 pt-0">
                                     <div class="d-flex border-top pt-3">
                                         <a href="{{ route('announcements.show', $announcement) }}" class="btn btn-light flex-grow-1 me-1">
@@ -123,6 +159,23 @@
 
         .card {
             border: none;
+        }
+
+        /* Comment preview styles */
+        .comments-preview {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .comment-item-preview {
+            transition: background-color 0.2s;
+            padding: 8px;
+            border-radius: 6px;
+        }
+
+        .comment-item-preview:hover {
+            background-color: #ffffff;
         }
     </style>
 

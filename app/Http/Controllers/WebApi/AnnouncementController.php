@@ -28,7 +28,15 @@ class AnnouncementController extends Controller
      */
     public function index()
     {
-        $announcements = Announcement::latest()->paginate(10);
+        $announcements = Announcement::with(['user', 'comments' => function($query) {
+            $query->where('is_deleted', false)
+                  ->whereNull('parent_id')
+                  ->with('user:id,name')
+                  ->latest()
+                  ->take(5);
+        }])
+        ->latest()
+        ->paginate(10);
 
         return view('announcements.index', compact('announcements'));
     }
