@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\ApprovalController;
+use App\Http\Controllers\ContactController;
+use App\Http\Controllers\MapController;
 use App\Http\Controllers\WebApi\AnnouncementController;
 use App\Http\Controllers\WebApi\CrimeReportController;
 use App\Http\Controllers\WebApi\RoleController;
@@ -46,3 +48,10 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/roles/{user}/assign-admin', [RoleController::class, 'assignAdmin'])->name('roles.assignAdmin');
     Route::post('/roles/{user}/demote-admin', [RoleController::class, 'demoteAdmin'])->name('roles.demoteAdmin');
 });
+
+
+
+// Contact routes
+Route::get('/contact', [ContactController::class, 'index'])->name('contact.index');
+Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
+Route::get('/map', [MapController::class, 'index'])->name('map.index');

@@ -40,11 +40,11 @@
                 </li>
 
                 <li class="nav-item">
-                    <a class="nav-link" href="#section_2">Map</a>
+                    <a class="nav-link" href="{{route('map.index')}}">Map</a>
                 </li>
 
                 <li class="nav-item">
-                    <a class="nav-link" href="#section_3">Contact</a>
+                    <a class="nav-link" href="{{route('contact.index')}}">Contact</a>
                 </li>
             </ul>
 
