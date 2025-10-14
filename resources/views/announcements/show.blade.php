@@ -8,24 +8,59 @@
         .comment-item {
             transition: background-color 0.2s;
         }
+
         .comment-item:hover {
             background-color: #f8f9fa;
         }
+
         .comment-actions button {
             font-size: 0.875rem;
         }
-        .reply-form, .edit-form {
+
+        .reply-form,
+        .edit-form {
             animation: slideDown 0.3s ease;
         }
+
         @keyframes slideDown {
             from {
                 opacity: 0;
                 transform: translateY(-10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
+        }
+
+        .replies-container {
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        #toggleBtn-$ {
+            comment.id
+        }
+
+            {
+            text-decoration: none;
+        }
+
+        #toggleBtn-$ {
+            comment.id
+        }
+
+        :hover {
+            text-decoration: none;
+        }
+
+        #toggleIcon-$ {
+            comment.id
+        }
+
+            {
+            transition: transform 0.2s ease;
         }
     </style>
     <div class="container-fluid">
@@ -35,7 +70,8 @@
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <div>
                             <h4>{{ $announcement->title }}</h4>
-                            <small class="text-muted">Created {{ $announcement->created_at->format('M d, Y') }} by {{ $announcement->user->name ?? 'Unknown' }}</small>
+                            <small class="text-muted">Created {{ $announcement->created_at->format('M d, Y') }} by
+                                {{ $announcement->user->name ?? 'Unknown' }}</small>
                         </div>
                         <div>
                             <a href="{{ route('announcements.index') }}" class="btn btn-secondary">
@@ -44,7 +80,8 @@
                             <a href="{{ route('announcements.edit', $announcement) }}" class="btn btn-primary">
                                 <i class='bx bx-edit'></i> Edit
                             </a>
-                            <form method="POST" action="{{ route('announcements.destroy', $announcement) }}" class="d-inline">
+                            <form method="POST" action="{{ route('announcements.destroy', $announcement) }}"
+                                class="d-inline">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure?')">
@@ -56,25 +93,26 @@
                     <div class="card-body">
                         <div class="row">
                             <!-- Images Carousel -->
-                            @if(!empty($announcement->images) && count($announcement->images) > 0)
+                            @if (!empty($announcement->images) && count($announcement->images) > 0)
                                 <div class="col-lg-6 mb-4">
                                     <div id="announcementCarousel" class="carousel slide" data-bs-ride="carousel">
                                         <div class="carousel-inner">
-                                            @foreach($announcement->images as $index => $image)
+                                            @foreach ($announcement->images as $index => $image)
                                                 <div class="carousel-item {{ $index === 0 ? 'active' : '' }}">
                                                     <img src="{{ asset('storage/' . $image['path']) }}"
-                                                        class="d-block w-100"
-                                                        alt="Announcement Image"
+                                                        class="d-block w-100" alt="Announcement Image"
                                                         style="height: 400px; object-fit: cover;">
                                                 </div>
                                             @endforeach
                                         </div>
-                                        @if(count($announcement->images) > 1)
-                                            <button class="carousel-control-prev" type="button" data-bs-target="#announcementCarousel" data-bs-slide="prev">
+                                        @if (count($announcement->images) > 1)
+                                            <button class="carousel-control-prev" type="button"
+                                                data-bs-target="#announcementCarousel" data-bs-slide="prev">
                                                 <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                                                 <span class="visually-hidden">Previous</span>
                                             </button>
-                                            <button class="carousel-control-next" type="button" data-bs-target="#announcementCarousel" data-bs-slide="next">
+                                            <button class="carousel-control-next" type="button"
+                                                data-bs-target="#announcementCarousel" data-bs-slide="next">
                                                 <span class="carousel-control-next-icon" aria-hidden="true"></span>
                                                 <span class="visually-hidden">Next</span>
                                             </button>
@@ -82,9 +120,9 @@
                                     </div>
 
                                     <!-- Image Thumbnails -->
-                                    @if(count($announcement->images) > 1)
+                                    @if (count($announcement->images) > 1)
                                         <div class="d-flex flex-wrap mt-2">
-                                            @foreach($announcement->images as $index => $image)
+                                            @foreach ($announcement->images as $index => $image)
                                                 <div class="me-2 mb-2" style="width: 60px; height: 60px;">
                                                     <img src="{{ asset('storage/' . $image['path']) }}"
                                                         class="img-thumbnail w-100 h-100"
@@ -99,7 +137,8 @@
                             @endif
 
                             <!-- Announcement Details -->
-                            <div class="{{ !empty($announcement->images) && count($announcement->images) > 0 ? 'col-lg-6' : 'col-12' }}">
+                            <div
+                                class="{{ !empty($announcement->images) && count($announcement->images) > 0 ? 'col-lg-6' : 'col-12' }}">
                                 <div class="badge bg-{{ $announcement->is_active ? 'success' : 'secondary' }} mb-3">
                                     {{ $announcement->is_active ? 'Active' : 'Inactive' }}
                                 </div>
@@ -111,10 +150,12 @@
 
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <p><strong>Created:</strong> {{ $announcement->created_at->format('M d, Y H:i') }}</p>
+                                        <p><strong>Created:</strong> {{ $announcement->created_at->format('M d, Y H:i') }}
+                                        </p>
                                     </div>
                                     <div class="col-md-6">
-                                        <p><strong>Last Updated:</strong> {{ $announcement->updated_at->format('M d, Y H:i') }}</p>
+                                        <p><strong>Last Updated:</strong>
+                                            {{ $announcement->updated_at->format('M d, Y H:i') }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -185,7 +226,8 @@
                 const data = await response.json();
                 displayComments(data.data);
             } catch (error) {
-                document.getElementById('commentsList').innerHTML = '<p class="text-danger">Failed to load comments. Please try again.</p>';
+                document.getElementById('commentsList').innerHTML =
+                    '<p class="text-danger">Failed to load comments. Please try again.</p>';
             }
         }
 
@@ -251,7 +293,12 @@
 
             // Check if comment is deleted
             const isDeleted = comment.is_deleted;
-            const commentText = isDeleted ? '<em class="text-muted">This comment was deleted by the user</em>' : escapeHtml(comment.content);
+            const commentText = isDeleted ? '<em class="text-muted">This comment was deleted by the user</em>' : escapeHtml(
+                comment.content);
+
+            // Check if has replies
+            const hasReplies = comment.replies && comment.replies.length > 0;
+            const replyCount = hasReplies ? comment.replies.length : 0;
 
             let html = `
                 <div class="comment-item mb-3" style="margin-left: ${indent}px; border-left: ${depth > 0 ? '2px solid #dee2e6' : 'none'}; padding-left: ${depth > 0 ? '15px' : '0'};">
@@ -261,6 +308,12 @@
                                 <div>
                                     <strong>${isDeleted ? '[deleted]' : userName}</strong>
                                     <small class="text-muted ms-2" title="${commentDateFull}">${commentDate}</small>
+                                    ${hasReplies ? `
+                                            <button class="btn btn-sm btn-link text-muted p-0 ms-2" onclick="toggleReplies(${comment.id})" id="toggleBtn-${comment.id}">
+                                                <i class='bx bx-chevron-down' id="toggleIcon-${comment.id}"></i>
+                                                <span id="toggleText-${comment.id}">${replyCount} ${replyCount === 1 ? 'reply' : 'replies'}</span>
+                                            </button>
+                                        ` : ''}
                                 </div>
                             </div>
                             <p class="mb-2 mt-1" id="commentText-${comment.id}">${commentText}</p>
@@ -276,22 +329,22 @@
 
                             <div class="comment-actions">
                                 ${!isDeleted ? `
-                                    <button class="btn btn-sm btn-link text-muted p-0 me-2" onclick="showReplyForm(${comment.id})">
-                                        <i class='bx bx-reply'></i> Reply
-                                    </button>
-                                    <button class="btn btn-sm btn-link text-primary p-0 me-2" onclick="showEditForm(${comment.id})">
-                                        <i class='bx bx-edit'></i> Edit
-                                    </button>
-                                    <button class="btn btn-sm btn-link text-danger p-0" onclick="deleteComment(${comment.id})">
-                                        <i class='bx bx-trash'></i> Delete
-                                    </button>
-                                ` : ''}
+                                        <button class="btn btn-sm btn-link text-muted p-0 me-2" onclick="showReplyForm(${comment.id})">
+                                            <i class='bx bx-reply'></i> Reply
+                                        </button>
+                                        <button class="btn btn-sm btn-link text-primary p-0 me-2" onclick="showEditForm(${comment.id})">
+                                            <i class='bx bx-edit'></i> Edit
+                                        </button>
+                                        <button class="btn btn-sm btn-link text-danger p-0" onclick="deleteComment(${comment.id})">
+                                            <i class='bx bx-trash'></i> Delete
+                                        </button>
+                                    ` : ''}
                             </div>
 
                             <div id="replyForm-${comment.id}" class="reply-form mt-2" style="display: none;">
                                 <div class="input-group">
                                     <input type="text" class="form-control form-control-sm" id="replyContent-${comment.id}" placeholder="Write a reply...">
-                                    <button class="btn btn-sm btn-primary" onclick="postReply(${comment.id})">Post</button>
+                                    <button class="btn btn-sm btn-primary" onclick="postComment(${comment.id})">Post</button>
                                     <button class="btn btn-sm btn-secondary" onclick="hideReplyForm(${comment.id})">Cancel</button>
                                 </div>
                             </div>
@@ -300,11 +353,13 @@
                 </div>
             `;
 
-            // Render replies recursively
+            // Recursively render replies (wrapped in collapsible container)
             if (comment.replies && comment.replies.length > 0) {
+                html += `<div id="replies-${comment.id}" class="replies-container">`;
                 comment.replies.forEach(reply => {
                     html += renderComment(reply, depth + 1);
                 });
+                html += `</div>`;
             }
 
             return html;
@@ -378,7 +433,9 @@
                         'Content-Type': 'application/json',
                         'Accept': 'application/json'
                     },
-                    body: JSON.stringify({ content: content })
+                    body: JSON.stringify({
+                        content: content
+                    })
                 });
 
                 if (!response.ok) throw new Error('Failed to update comment');
@@ -446,9 +503,25 @@
                 }
             }, 5000);
         }
+
+        // Toggle replies visibility
+        function toggleReplies(commentId) {
+            const repliesContainer = document.getElementById(`replies-${commentId}`);
+            const toggleIcon = document.getElementById(`toggleIcon-${commentId}`);
+
+            if (repliesContainer.style.display === 'none') {
+                // Show replies
+                repliesContainer.style.display = 'block';
+                toggleIcon.className = 'bx bx-chevron-down';
+            } else {
+                // Hide replies
+                repliesContainer.style.display = 'none';
+                toggleIcon.className = 'bx bx-chevron-right';
+            }
+        }
     </script>
 
-    @if(session('success'))
+    @if (session('success'))
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 const alertDiv = document.createElement('div');

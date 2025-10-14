@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Comment;
 use App\Models\Announcement;
+use App\Models\Comment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -166,7 +166,7 @@ class CommentController extends Controller
 
     /**
      * Delete a comment (only by the owner)
-     * Parent comments are soft deleted, child comments are hard deleted
+     * All comments show deletion message instead of being removed
      */
     public function destroy(Comment $comment)
     {
@@ -179,21 +179,11 @@ class CommentController extends Controller
                 ], 403);
             }
 
-            // If it's a parent comment (has replies), mark as deleted instead of deleting
-            if ($comment->parent_id === null && $comment->replies()->count() > 0) {
-                $comment->update([
-                    'is_deleted' => true,
-                    'content' => '[deleted]'
-                ]);
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Comment marked as deleted. Replies will remain visible.',
-                ], 200);
-            }
-
-            // If it's a child comment or parent with no replies, delete completely
-            $comment->delete();
+            // Mark comment as deleted (soft delete for all comments)
+            $comment->update([
+                'is_deleted' => true,
+                'content' => '[deleted]',
+            ]);
 
             return response()->json([
                 'success' => true,
