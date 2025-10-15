@@ -181,7 +181,7 @@
                 <div class="col-lg-8">
                     <div class="custom-block text-center py-4">
                         <i class="fas fa-map-marked-alt fa-3x text-primary mb-3"></i>
-                        <h2 class="h3 mb-2">Crime Reports Map</h2>
+                        <h2 class="h3 mb-2">AI Crime Map</h2>
                         <p class="text-muted mb-0">Interactive map showing crime reports in Tanauan City, Batangas</p>
                     </div>
                 </div>
