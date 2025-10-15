@@ -11,14 +11,8 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasApiTokens, HasRoles;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
         'name',
         'email',
@@ -37,9 +31,6 @@ class User extends Authenticatable
         ];
     }
 
-    /**
-     * Get the announcements for the user.
-     */
     public function announcements(): HasMany
     {
         return $this->hasMany(Announcement::class);
@@ -50,17 +41,20 @@ class User extends Authenticatable
         return $this->hasMany(CrimeReport::class, 'reported_by');
     }
 
-    // Add this to your existing User model
-    public function deviceTokens()
+    public function deviceTokens(): HasMany
     {
         return $this->hasMany(UserDeviceToken::class);
     }
 
-    public function addDeviceToken($token, $deviceType = null)
+    public function addDeviceToken($token, $deviceType = null, $timestamp = null)
     {
         return $this->deviceTokens()->updateOrCreate(
             ['token' => $token],
-            ['device_type' => $deviceType]
+            [
+                'device_type' => $deviceType,
+                'last_used_at' => $timestamp ?? now(),
+                'registered_at' => now()
+            ]
         );
     }
 
@@ -69,4 +63,24 @@ class User extends Authenticatable
         return $this->deviceTokens()->where('token', $token)->delete();
     }
 
+    public function updateTokenTimestamp($token)
+    {
+        return $this->deviceTokens()
+                    ->where('token', $token)
+                    ->update(['last_used_at' => now()]);
+    }
+
+    public function removeStaleTokens()
+    {
+        $cutoffDate = now()->subDays(30);
+        return $this->deviceTokens()->where('last_used_at', '<', $cutoffDate)->delete();
+    }
+
+    public function getActiveTokens()
+    {
+        return $this->deviceTokens()
+                    ->where('last_used_at', '>=', now()->subDays(30))
+                    ->pluck('token')
+                    ->toArray();
+    }
 }

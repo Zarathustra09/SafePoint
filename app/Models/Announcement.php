@@ -62,4 +62,20 @@ class Announcement extends Model
         // Return the first image if no featured image is found
         return $this->images[0] ?? null;
     }
+
+    /**
+     * Get all comments for the announcement
+     */
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
+    }
+
+    /**
+     * Get comment count for this announcement
+     */
+    public function getCommentCountAttribute()
+    {
+        return $this->comments()->count();
+    }
 }

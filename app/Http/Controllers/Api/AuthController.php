@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
 
 class AuthController extends Controller
 {
@@ -15,7 +16,8 @@ class AuthController extends Controller
             'email' => 'required|email',
             'password' => 'required',
             'fcm_token' => 'nullable|string',
-            'device_type' => 'nullable|string|in:android,ios,web'
+            'device_type' => 'nullable|string|in:android,ios,web',
+            'timestamp' => 'nullable|date'
         ]);
 
         if ($validator->fails()) {
@@ -36,7 +38,12 @@ class AuthController extends Controller
             $token = $user->createToken('authToken')->plainTextToken;
 
             if ($request->fcm_token) {
-                $user->addDeviceToken($request->fcm_token, $request->device_type);
+                $timestamp = $request->timestamp ? Carbon::parse($request->timestamp) : now();
+                $user->addDeviceToken(
+                    $request->fcm_token,
+                    $request->device_type,
+                    $timestamp
+                );
                 \Log::info('FCM token registered on login', [
                     'user_id' => $user->id,
                     'device_type' => $request->device_type
@@ -63,7 +70,8 @@ class AuthController extends Controller
             'password' => 'required|string|min:8|confirmed',
             'valid_id_image' => 'required|file|mimes:jpeg,png,jpg',
             'fcm_token' => 'nullable|string',
-            'device_type' => 'nullable|string|in:android,ios,web'
+            'device_type' => 'nullable|string|in:android,ios,web',
+            'timestamp' => 'nullable|date'
         ]);
 
         if ($validator->fails()) {
@@ -85,7 +93,12 @@ class AuthController extends Controller
         $token = $user->createToken('authToken')->plainTextToken;
 
         if ($request->fcm_token) {
-            $user->addDeviceToken($request->fcm_token, $request->device_type);
+            $timestamp = $request->timestamp ? Carbon::parse($request->timestamp) : now();
+            $user->addDeviceToken(
+                $request->fcm_token,
+                $request->device_type,
+                $timestamp
+            );
             \Log::info('FCM token registered on registration', [
                 'user_id' => $user->id,
                 'device_type' => $request->device_type
@@ -97,11 +110,6 @@ class AuthController extends Controller
             'token' => $token,
             'user' => $user
         ], 201);
-    }
-
-    public function getUser(Request $request)
-    {
-        return response()->json($request->user());
     }
 
     public function logout(Request $request)
@@ -118,5 +126,10 @@ class AuthController extends Controller
         $user->currentAccessToken()->delete();
 
         return response()->json(['message' => 'Logged out successfully']);
+    }
+
+    public function getUser(Request $request)
+    {
+        return response()->json($request->user());
     }
 }

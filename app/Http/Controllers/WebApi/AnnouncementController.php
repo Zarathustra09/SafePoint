@@ -12,6 +12,9 @@ use Kreait\Firebase\Contract\Messaging;
 use Kreait\Firebase\Messaging\CloudMessage;
 use Kreait\Firebase\Messaging\Notification;
 use Kreait\Firebase\Exception\MessagingException;
+use Kreait\Firebase\Messaging\AndroidConfig;
+use Kreait\Firebase\Messaging\ApnsConfig;
+
 class AnnouncementController extends Controller
 {
     private $messaging;
@@ -25,7 +28,15 @@ class AnnouncementController extends Controller
      */
     public function index()
     {
-        $announcements = Announcement::latest()->paginate(10);
+        $announcements = Announcement::with(['user', 'comments' => function($query) {
+            $query->where('is_deleted', false)
+                  ->whereNull('parent_id')
+                  ->with('user:id,name')
+                  ->latest()
+                  ->take(5);
+        }])
+        ->latest()
+        ->paginate(10);
 
         return view('announcements.index', compact('announcements'));
     }
@@ -91,26 +102,64 @@ class AnnouncementController extends Controller
     private function sendAnnouncementNotification(Announcement $announcement)
     {
         try {
-            // Get all device tokens
-            $tokens = UserDeviceToken::pluck('token')->toArray();
+            // Get unique active device tokens
+            $tokens = array_values(array_unique(UserDeviceToken::getAllActiveTokens()));
 
             if (empty($tokens)) {
-                \Log::info('No device tokens found for announcement notification');
+                \Log::info('No active device tokens found for announcement notification');
                 return;
             }
 
+            $shortBody = substr($announcement->description, 0, 100) . (strlen($announcement->description) > 100 ? '...' : '');
             $notification = Notification::create(
                 'New Announcement: ' . $announcement->title,
-                substr($announcement->description, 0, 100) . (strlen($announcement->description) > 100 ? '...' : '')
+                $shortBody
             );
+
+            // Configure Android for high priority delivery and tap handling
+            $androidConfig = AndroidConfig::fromArray([
+                'ttl' => '3600s',
+                'priority' => 'high',
+                'notification' => [
+                    'sound' => 'default',
+                    'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+                    'tag' => 'announcement',
+                ],
+                'fcm_options' => [
+                    'analytics_label' => 'announcements',
+                ],
+            ]);
+
+            // Configure APNs for iOS alert delivery and tap handling
+            $apnsConfig = ApnsConfig::fromArray([
+                'headers' => [
+                    'apns-push-type' => 'alert',
+                    'apns-priority' => '10',
+                ],
+                'payload' => [
+                    'aps' => [
+                        'sound' => 'default',
+                        'content-available' => 1,
+                        'mutable-content' => 1,
+                        'category' => 'announcement',
+                    ],
+                ],
+                'fcm_options' => [
+                    'analytics_label' => 'announcements',
+                ],
+            ]);
 
             $message = CloudMessage::new()
                 ->withNotification($notification)
+                ->withAndroidConfig($androidConfig)
+                ->withApnsConfig($apnsConfig)
                 ->withData([
                     'type' => 'announcement',
                     'announcement_id' => (string) $announcement->id,
                     'title' => $announcement->title,
-                    'created_at' => $announcement->created_at->toISOString()
+                    'body' => $shortBody,
+                    'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+                    'created_at' => $announcement->created_at->toISOString(),
                 ]);
 
             $report = $this->messaging->sendMulticast($message, $tokens);
@@ -122,12 +171,40 @@ class AnnouncementController extends Controller
                 'total_tokens' => count($tokens)
             ]);
 
-            // Remove invalid tokens
+            // Touch tokens that received the message successfully
+            $successTokens = array_map(
+                fn ($s) => $s->target()->value(),
+                $report->successes()->getItems()
+            );
+            if (!empty($successTokens)) {
+                UserDeviceToken::touchTokens($successTokens);
+            }
+
+            // Handle failures and remove invalid tokens
             if ($report->hasFailures()) {
                 foreach ($report->failures()->getItems() as $failure) {
-                    if ($failure->error()->code() === 'INVALID_ARGUMENT' ||
-                        $failure->error()->code() === 'UNREGISTERED') {
-                        UserDeviceToken::where('token', $failure->target()->value())->delete();
+                    $target = $failure->target();
+                    $error = $failure->error();
+                    $errorMessage = $error->getMessage();
+
+                    \Log::warning('FCM send failure', [
+                        'token' => substr($target->value(), 0, 20) . '...',
+                        'error' => $errorMessage
+                    ]);
+
+                    if (strpos($errorMessage, 'INVALID_ARGUMENT') !== false ||
+                        strpos($errorMessage, 'UNREGISTERED') !== false ||
+                        strpos($errorMessage, 'NOT_FOUND') !== false ||
+                        strpos($errorMessage, 'invalid registration token') !== false ||
+                        strpos($errorMessage, 'registration token is not a valid FCM') !== false) {
+
+                        $deletedCount = UserDeviceToken::where('token', $target->value())->delete();
+
+                        \Log::info('Removed invalid FCM token', [
+                            'token' => substr($target->value(), 0, 20) . '...',
+                            'error' => $errorMessage,
+                            'deleted_count' => $deletedCount
+                        ]);
                     }
                 }
             }
@@ -135,12 +212,14 @@ class AnnouncementController extends Controller
         } catch (MessagingException $e) {
             \Log::error('Firebase messaging error for announcement', [
                 'announcement_id' => $announcement->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'code' => $e->getCode()
             ]);
         } catch (\Exception $e) {
             \Log::error('General error sending announcement notification', [
                 'announcement_id' => $announcement->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
         }
     }
