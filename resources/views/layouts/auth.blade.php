@@ -74,6 +74,19 @@
             z-index: 2;
         }
 
+        /* Ensure footer has solid background */
+        .site-footer {
+            background-color: var(--dark-color) !important;
+            z-index: 100 !important;
+            position: relative;
+        }
+
+        /* Ensure main content doesn't overlap footer */
+        main {
+            position: relative;
+            z-index: 1;
+        }
+
         .btn-primary {
             background: linear-gradient(45deg, #0d6efd, #0056b3);
             border: none;

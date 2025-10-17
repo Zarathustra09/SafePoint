@@ -35,17 +35,17 @@
 
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url('/') }}">Home</a>
-                </li>
+                 <li class="nav-item">
+                     <a class="{{ request()->is('/') ? 'nav-link active' : 'nav-link' }}" href="{{ url('/') }}">Home</a>
+                 </li>
 
-                <li class="nav-item">
-                    <a class="nav-link" href="{{route('map.index')}}">Map</a>
-                </li>
+                 <li class="nav-item">
+                     <a class="{{ request()->routeIs('map.index') ? 'nav-link active' : 'nav-link' }}" href="{{route('map.index')}}">Map</a>
+                 </li>
 
-                <li class="nav-item">
-                    <a class="nav-link" href="{{route('contact.index')}}">Contact</a>
-                </li>
+                 <li class="nav-item">
+                     <a class="{{ request()->routeIs('contact.index') ? 'nav-link active' : 'nav-link' }}" href="{{route('contact.index')}}">Contact</a>
+         </li>
             </ul>
 
             <div class="d-none d-lg-block ms-3">

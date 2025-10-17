@@ -54,6 +54,19 @@
             z-index: 2;
         }
 
+        /* Ensure footer has solid background */
+        .site-footer {
+            background-color: var(--dark-color) !important;
+            z-index: 100 !important;
+            position: relative;
+        }
+
+        /* Ensure main content doesn't overlap footer */
+        main {
+            position: relative;
+            z-index: 1;
+        }
+
         .contact-icon {
             width: 40px;
             height: 40px;

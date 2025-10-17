@@ -929,6 +929,8 @@ blockquote {
 .site-footer {
   border-bottom: 10px solid var(--secondary-color);
   position: relative;
+  background-color: var(--dark-color) !important;
+  z-index: 10;
 }
 
 .site-footer::after {
