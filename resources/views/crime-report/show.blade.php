@@ -11,7 +11,7 @@
                             <a href="{{ route('reports.edit', $crimeReport->id) }}" class="btn btn-secondary btn-sm">
                                 <i class="fas fa-edit"></i> Edit
                             </a>
-                            <a href="{{ route('reports.index') }}" class="btn btn-outline-secondary btn-sm">
+                            <a href="{{ route('reports.list') }}" class="btn btn-outline-secondary btn-sm">
                                 <i class="fas fa-arrow-left"></i> Back to List
                             </a>
                         </div>

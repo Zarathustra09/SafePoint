@@ -7,14 +7,14 @@
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <div>
-                            <h4>Crime Reports Map</h4>
+                            <h4>AI Crime Map</h4>
                             <small class="text-muted">Crime reports in Tanauan City, Batangas</small>
                         </div>
-                        <div>
-                            <a href="{{ route('reports.create') }}" class="btn btn-primary">
-                                <i class="fas fa-plus"></i> Create Report
-                            </a>
-                        </div>
+{{--                        <div>--}}
+{{--                            <a href="{{ route('reports.create') }}" class="btn btn-primary">--}}
+{{--                                <i class="fas fa-plus"></i> Create Report--}}
+{{--                            </a>--}}
+{{--                        </div>--}}
                     </div>
                     <div class="card-body p-0">
                         <div id="map" style="height: 600px; width: 100%;"></div>

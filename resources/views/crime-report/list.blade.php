@@ -10,11 +10,11 @@
                             <h4>Crime Reports List</h4>
                             <small class="text-muted">All crime reports in Tanauan City, Batangas</small>
                         </div>
-                        <div>
-                            <a href="{{ route('reports.create') }}" class="btn btn-primary">
-                                <i class="bx bx-plus"></i> Create Report
-                            </a>
-                        </div>
+{{--                        <div>--}}
+{{--                            <a href="{{ route('reports.create') }}" class="btn btn-primary">--}}
+{{--                                <i class="bx bx-plus"></i> Create Report--}}
+{{--                            </a>--}}
+{{--                        </div>--}}
                     </div>
                     <div class="card-body">
                         @if($crimeReports->count() > 0)
