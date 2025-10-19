@@ -309,11 +309,11 @@
                                     <strong>${isDeleted ? '[deleted]' : userName}</strong>
                                     <small class="text-muted ms-2" title="${commentDateFull}">${commentDate}</small>
                                     ${hasReplies ? `
-                                            <button class="btn btn-sm btn-link text-muted p-0 ms-2" onclick="toggleReplies(${comment.id})" id="toggleBtn-${comment.id}">
-                                                <i class='bx bx-chevron-down' id="toggleIcon-${comment.id}"></i>
-                                                <span id="toggleText-${comment.id}">${replyCount} ${replyCount === 1 ? 'reply' : 'replies'}</span>
-                                            </button>
-                                        ` : ''}
+                                                <button class="btn btn-sm btn-link text-muted p-0 ms-2" onclick="toggleReplies(${comment.id})" id="toggleBtn-${comment.id}">
+                                                    <i class='bx bx-chevron-down' id="toggleIcon-${comment.id}"></i>
+                                                    <span id="toggleText-${comment.id}">${replyCount} ${replyCount === 1 ? 'reply' : 'replies'}</span>
+                                                </button>
+                                            ` : ''}
                                 </div>
                             </div>
                             <p class="mb-2 mt-1" id="commentText-${comment.id}">${commentText}</p>
@@ -329,22 +329,22 @@
 
                             <div class="comment-actions">
                                 ${!isDeleted ? `
-                                        <button class="btn btn-sm btn-link text-muted p-0 me-2" onclick="showReplyForm(${comment.id})">
-                                            <i class='bx bx-reply'></i> Reply
-                                        </button>
-                                        <button class="btn btn-sm btn-link text-primary p-0 me-2" onclick="showEditForm(${comment.id})">
-                                            <i class='bx bx-edit'></i> Edit
-                                        </button>
-                                        <button class="btn btn-sm btn-link text-danger p-0" onclick="deleteComment(${comment.id})">
-                                            <i class='bx bx-trash'></i> Delete
-                                        </button>
-                                    ` : ''}
+                                            <button class="btn btn-sm btn-link text-muted p-0 me-2" onclick="showReplyForm(${comment.id})">
+                                                <i class='bx bx-reply'></i> Reply
+                                            </button>
+                                            <button class="btn btn-sm btn-link text-primary p-0 me-2" onclick="showEditForm(${comment.id})">
+                                                <i class='bx bx-edit'></i> Edit
+                                            </button>
+                                            <button class="btn btn-sm btn-link text-danger p-0" onclick="deleteComment(${comment.id})">
+                                                <i class='bx bx-trash'></i> Delete
+                                            </button>
+                                        ` : ''}
                             </div>
 
                             <div id="replyForm-${comment.id}" class="reply-form mt-2" style="display: none;">
                                 <div class="input-group">
                                     <input type="text" class="form-control form-control-sm" id="replyContent-${comment.id}" placeholder="Write a reply...">
-                                    <button class="btn btn-sm btn-primary" onclick="postComment(${comment.id})">Post</button>
+                                    <button class="btn btn-sm btn-primary" onclick="postReply(${comment.id})">Post</button>
                                     <button class="btn btn-sm btn-secondary" onclick="hideReplyForm(${comment.id})">Cancel</button>
                                 </div>
                             </div>
