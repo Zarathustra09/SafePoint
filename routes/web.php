@@ -16,24 +16,23 @@ Route::get('/', function () {
 Auth::routes(['register' => false]);
 Route::middleware(['auth', 'role:Admin'])->group(function () {
     Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
-
     Route::get('/reports/list', [CrimeReportController::class, 'list'])->name('reports.list');
+    Route::get('/reports/export', [CrimeReportController::class, 'export'])->name('reports.export');
     Route::resource('/reports', CrimeReportController::class);
-
-
-
     Route::put('/announcements/{announcement}/image/{imageId}', [AnnouncementController::class, 'updateImage']);
     Route::delete('/announcements/{announcement}/image/{imageId}', [AnnouncementController::class, 'deleteImage']);
     Route::resource('/announcements', AnnouncementController::class);
 });
 
-
 // Fix the routes order to prioritize named routes before parameter routes
-Route::get('/profile', [App\Http\Controllers\ProfileController::class, 'index'])->name('profile.index');
-Route::post('/profile/upload-image', [App\Http\Controllers\ProfileController::class, 'uploadImage'])->name('profile.uploadImage');
-Route::delete('/profile/reset-image', [App\Http\Controllers\ProfileController::class, 'resetImage'])->name('profile.resetImage')->middleware('auth');
-Route::put('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
-Route::delete('/profile', [App\Http\Controllers\ProfileController::class, 'destroy'])->name('profile.destroy');
+Route::middleware(['auth'])->group(function () {
+    Route::get('/profile', [App\Http\Controllers\ProfileController::class, 'index'])->name('profile.index');
+    Route::post('/profile/upload-image', [App\Http\Controllers\ProfileController::class, 'uploadImage'])->name('profile.uploadImage');
+    Route::delete('/profile/reset-image', [App\Http\Controllers\ProfileController::class, 'resetImage'])->name('profile.resetImage');
+    Route::put('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [App\Http\Controllers\ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
 
 
 Route::prefix('approval')->middleware(['auth'])->group(function () {
@@ -48,8 +47,6 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/roles/{user}/assign-admin', [RoleController::class, 'assignAdmin'])->name('roles.assignAdmin');
     Route::post('/roles/{user}/demote-admin', [RoleController::class, 'demoteAdmin'])->name('roles.demoteAdmin');
 });
-
-
 
 // Contact routes
 Route::get('/contact', [ContactController::class, 'index'])->name('contact.index');

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CrimeReport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Maatwebsite\Excel\Facades\Excel;
 
 class CrimeReportController extends Controller
 {
@@ -90,5 +91,50 @@ class CrimeReportController extends Controller
          return view('crime-report.list', compact('crimeReports'));
      }
 
+     public function export()
+     {
+         return Excel::download(
+             new class implements \Maatwebsite\Excel\Concerns\FromCollection, \Maatwebsite\Excel\Concerns\WithHeadings, \Maatwebsite\Excel\Concerns\WithMapping, \Maatwebsite\Excel\Concerns\ShouldAutoSize {
+                 public function collection()
+                 {
+                     return CrimeReport::with('reporter')->orderBy('incident_date', 'desc')->get();
+                 }
 
+                 public function headings(): array
+                 {
+                     return [
+                         'ID',
+                         'Title',
+                         'Description',
+                         'Severity',
+                         'Status',
+                         'Address',
+                         'Latitude',
+                         'Longitude',
+                         'Incident Date',
+                         'Reported By',
+                         'Created At',
+                     ];
+                 }
+
+                 public function map($report): array
+                 {
+                     return [
+                         $report->id,
+                         $report->title,
+                         $report->description,
+                         ucfirst($report->severity),
+                         ucfirst(str_replace('_', ' ', $report->status)),
+                         $report->address,
+                         $report->latitude,
+                         $report->longitude,
+                         optional($report->incident_date)->format('Y-m-d H:i:s'),
+                         $report->reporter->name ?? 'Unknown',
+                         optional($report->created_at)->format('Y-m-d H:i:s'),
+                     ];
+                 }
+             },
+             'crime-reports-' . now()->format('Y-m-d') . '.xlsx'
+         );
+     }
 }
