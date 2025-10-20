@@ -29,6 +29,22 @@ class CrimeReportController extends Controller
             );
         }
 
+        // apply search parameter if provided
+        if ($request->filled('search')) {
+            $term = trim($request->search);
+            if ($term !== '') {
+                $like = "%{$term}%";
+                $query->where(function ($q) use ($like) {
+                    $q->where('title', 'like', $like)
+                      ->orWhere('description', 'like', $like)
+                      ->orWhere('address', 'like', $like)
+                      ->orWhereHas('reporter', function ($q2) use ($like) {
+                          $q2->where('name', 'like', $like);
+                      });
+                });
+            }
+        }
+
         $crimeReports = $query->latest()->paginate(15);
 
         return $crimeReports;
