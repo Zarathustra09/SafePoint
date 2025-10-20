@@ -412,7 +412,8 @@
         </div>
     </div>
 
-    <script async defer
+    <!-- Load Google Maps API after parsing -->
+    <script defer
         src="https://maps.googleapis.com/maps/api/js?key={{env('GOOGLE_MAPS_API_KEY')}}&callback=initMap">
     </script>
 
@@ -424,7 +425,8 @@
         // Crime reports data
         const crimeReports = @json($crimeReports);
 
-        function initMap() {
+        // Make initMap global for Google Maps callback
+        window.initMap = function() {
             // Default location - Tanauan City, Batangas, Philippines
             const tanauanCity = { lat: 14.0865, lng: 121.1488 };
 
@@ -475,6 +477,11 @@
                     map.setZoom(15);
                 }
             }
+
+            // Close info window on map click
+            map.addListener('click', () => {
+                infoWindow.close();
+            });
         }
 
         function addMarker(report) {
@@ -551,12 +558,7 @@
                         </span>
                     </div>
 
-                    <div style="display: flex; gap: 8px; justify-content: center;">
-                        <a href="/reports/${report.id}" class="btn btn-primary btn-sm" style="text-decoration: none; font-size: 0.8rem;">
-                            <i class="fas fa-eye"></i> View Details
-                        </a>
-                        ${report.status !== 'resolved' ? `<a href="/reports/${report.id}/edit" class="btn btn-outline-secondary btn-sm" style="text-decoration: none; font-size: 0.8rem;"><i class="fas fa-edit"></i> Edit</a>` : ''}
-                    </div>
+
                 </div>
             `;
 
@@ -619,12 +621,5 @@
                 }, 8000);
             });
         });
-
-        // Add map click listener to close info window
-        if (map) {
-            map.addListener('click', () => {
-                infoWindow.close();
-            });
-        }
     </script>
 @endsection
