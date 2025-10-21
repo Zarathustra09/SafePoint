@@ -34,11 +34,13 @@ class ProfileController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'address' => 'nullable|string|max:1000',
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
         $user->name = $request->name;
         $user->email = $request->email;
+        $user->address = $request->address;
 
         if ($request->hasFile('profile_picture')) {
             // Delete old profile picture if exists
