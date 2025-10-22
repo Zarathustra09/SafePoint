@@ -9,7 +9,7 @@
         </div>
     @endif
 
-    <p class="mb-4">{{ __('Your password has been updated. You are now signed in.') }}</p>
+    <p class="mb-4">{{ __('Your password has been updated. You can now use your password') }}</p>
 
     <div class="d-grid">
         <a href="{{ url('/') }}" class="btn btn-primary">
