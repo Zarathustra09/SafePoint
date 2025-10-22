@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->call([
+            ProperAdminSeeder::class,
             CrimeReportSeeder::class,
             AdminRoleSeeder::class,
         ]);

@@ -12,7 +12,11 @@ class AdminRoleSeeder extends Seeder
     {
         // Create the Admin role if it doesn't exist
         $adminRole = Role::firstOrCreate(['name' => 'Admin']);
+
         $user = User::where('email', 'test@example.com')->first();
-        $user->assignRole($adminRole);
+
+        if ($user && !$user->hasRole('Admin')) {
+            $user->assignRole($adminRole);
+        }
     }
 }
