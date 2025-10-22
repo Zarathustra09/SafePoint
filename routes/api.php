@@ -21,6 +21,7 @@ Route::middleware('auth:sanctum')->apiResource('announcements.comments', App\Htt
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login/remember', [AuthController::class, 'loginWithRememberToken']);
 Route::middleware('auth:sanctum')->get('/user', [AuthController::class, 'getUser']);
 
 

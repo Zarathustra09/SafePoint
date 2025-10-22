@@ -19,7 +19,8 @@ class User extends Authenticatable
         'profile_picture',
         'password',
         'is_verified',
-        'valid_id_image'
+        'valid_id_image',
+        'address'
     ];
 
     protected function casts(): array
