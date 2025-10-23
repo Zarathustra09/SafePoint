@@ -45,6 +45,21 @@ class AIController extends Controller
             'time_sensitivity_days' => 'numeric|min:1|max:365'
         ]);
 
+        // Validate that both start and end coordinates are within Tanauan City, Batangas
+        if (!$this->isInTanauan((float) $request->start_lat, (float) $request->start_lng)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Start location must be within Tanauan City, Batangas.'
+            ], 422);
+        }
+
+        if (!$this->isInTanauan((float) $request->end_lat, (float) $request->end_lng)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'End location must be within Tanauan City, Batangas.'
+            ], 422);
+        }
+
         $radius = $request->input('radius', 5);
         $avoidRecentCrimes = $request->input('avoid_recent_crimes', true);
         $timeSensitivityDays = $request->input('time_sensitivity_days', 30);
@@ -420,4 +435,68 @@ class AIController extends Controller
     }
 
 
+    /**
+     * Check if coordinates are within Tanauan City, Batangas using Google Maps API
+     */
+    protected function isInTanauan(float $lat, float $lng): bool
+    {
+        $apiKey = env('GOOGLE_MAPS_API_KEY');
+
+        if (empty($apiKey)) {
+            return false;
+        }
+
+        $url = "https://maps.googleapis.com/maps/api/geocode/json?latlng={$lat},{$lng}&key={$apiKey}";
+        $response = Http::get($url);
+
+        if (!$response->successful()) {
+            return false;
+        }
+
+        $data = $response->json();
+
+        if (empty($data['results'])) {
+            return false;
+        }
+
+        foreach ($data['results'] as $result) {
+            if (!empty($result['address_components'])) {
+                $components = $result['address_components'];
+                $hasTanauan = false;
+                $hasBatangas = false;
+
+                foreach ($components as $component) {
+                    $types = $component['types'] ?? [];
+                    $name = strtolower($component['long_name'] ?? '');
+
+                    // Check for Tanauan in locality or administrative area
+                    if ((in_array('locality', $types) || in_array('administrative_area_level_2', $types)) &&
+                        strpos($name, 'tanauan') !== false) {
+                        $hasTanauan = true;
+                    }
+
+                    // Check for Batangas in administrative area level 1 (province)
+                    if (in_array('administrative_area_level_1', $types) &&
+                        strpos($name, 'batangas') !== false) {
+                        $hasBatangas = true;
+                    }
+                }
+
+                if ($hasTanauan && $hasBatangas) {
+                    return true;
+                }
+            }
+
+            // Fallback: check formatted address
+            if (!empty($result['formatted_address'])) {
+                $formattedAddress = strtolower($result['formatted_address']);
+                if (strpos($formattedAddress, 'tanauan') !== false &&
+                    strpos($formattedAddress, 'batangas') !== false) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
 }
