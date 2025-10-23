@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CrimeReport;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Http;
 
 class CrimeReportController extends Controller
 {
@@ -36,11 +37,11 @@ class CrimeReportController extends Controller
                 $like = "%{$term}%";
                 $query->where(function ($q) use ($like) {
                     $q->where('title', 'like', $like)
-                      ->orWhere('description', 'like', $like)
-                      ->orWhere('address', 'like', $like)
-                      ->orWhereHas('reporter', function ($q2) use ($like) {
-                          $q2->where('name', 'like', $like);
-                      });
+                        ->orWhere('description', 'like', $like)
+                        ->orWhere('address', 'like', $like)
+                        ->orWhereHas('reporter', function ($q2) use ($like) {
+                            $q2->where('name', 'like', $like);
+                        });
                 });
             }
         }
@@ -67,6 +68,14 @@ class CrimeReportController extends Controller
             'report_image' => 'nullable|file|mimes:jpeg,png,jpg|max:2048',
         ]);
 
+        // Verify location is within Tanauan City, Batangas
+        if (!$this->isInTanauan((float) $validated['latitude'], (float) $validated['longitude'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Reports must be located within Tanauan City, Batangas.'
+            ], 422);
+        }
+
         if ($request->hasFile('report_image')) {
             $validated['report_image'] = $request->file('report_image')->store('report_images', 'public');
         }
@@ -89,6 +98,17 @@ class CrimeReportController extends Controller
             'incident_date' => 'sometimes|date',
             'report_image' => 'nullable|file|mimes:jpeg,png,jpg|max:2048',
         ]);
+
+        // Determine effective coordinates after update
+        $effectiveLat = array_key_exists('latitude', $validated) ? (float) $validated['latitude'] : (float) $crimeReport->latitude;
+        $effectiveLng = array_key_exists('longitude', $validated) ? (float) $validated['longitude'] : (float) $crimeReport->longitude;
+
+        if (!$this->isInTanauan($effectiveLat, $effectiveLng)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Updated location must be within Tanauan City, Batangas.'
+            ], 422);
+        }
 
         if ($request->hasFile('report_image')) {
             $validated['report_image'] = $request->file('report_image')->store('report_images', 'public');
@@ -116,34 +136,98 @@ class CrimeReportController extends Controller
     }
 
 
-   public function myReports(Request $request)
-   {
-       $user = auth()->user();
+    public function myReports(Request $request)
+    {
+        $user = auth()->user();
 
-       if (!$user) {
-           return response()->json([
-               'success' => false,
-               'message' => 'User not authenticated'
-           ], 401);
-       }
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not authenticated'
+            ], 401);
+        }
 
-       $query = $user->crimeReports()->with('reporter');
+        $query = $user->crimeReports()->with('reporter');
 
-       if ($request->has('severity')) {
-           $query->bySeverity($request->severity);
-       }
+        if ($request->has('severity')) {
+            $query->bySeverity($request->severity);
+        }
 
-       if ($request->has('status')) {
-           $query->byStatus($request->status);
-       }
+        if ($request->has('status')) {
+            $query->byStatus($request->status);
+        }
 
-       $crimeReports = $query->latest()->paginate(15);
+        $crimeReports = $query->latest()->paginate(15);
 
-       return response()->json([
-           'success' => true,
-           'data' => $crimeReports,
-           'message' => 'Crime reports retrieved successfully'
-       ]);
-   }
+        return response()->json([
+            'success' => true,
+            'data' => $crimeReports,
+            'message' => 'Crime reports retrieved successfully'
+        ]);
+    }
 
+    /**
+     * Check if coordinates are within Tanauan City, Batangas using Google Maps API
+     */
+    protected function isInTanauan(float $lat, float $lng): bool
+    {
+        $apiKey = env('GOOGLE_MAPS_API_KEY');
+
+        if (empty($apiKey)) {
+            return false;
+        }
+
+        $url = "https://maps.googleapis.com/maps/api/geocode/json?latlng={$lat},{$lng}&key={$apiKey}";
+        $response = Http::get($url);
+
+        if (!$response->successful()) {
+            return false;
+        }
+
+        $data = $response->json();
+
+        if (empty($data['results'])) {
+            return false;
+        }
+
+        foreach ($data['results'] as $result) {
+            if (!empty($result['address_components'])) {
+                $components = $result['address_components'];
+                $hasTanauan = false;
+                $hasBatangas = false;
+
+                foreach ($components as $component) {
+                    $types = $component['types'] ?? [];
+                    $name = strtolower($component['long_name'] ?? '');
+
+                    // Check for Tanauan in locality or administrative area
+                    if ((in_array('locality', $types) || in_array('administrative_area_level_2', $types)) &&
+                        strpos($name, 'tanauan') !== false) {
+                        $hasTanauan = true;
+                    }
+
+                    // Check for Batangas in administrative area level 1 (province)
+                    if (in_array('administrative_area_level_1', $types) &&
+                        strpos($name, 'batangas') !== false) {
+                        $hasBatangas = true;
+                    }
+                }
+
+                if ($hasTanauan && $hasBatangas) {
+                    return true;
+                }
+            }
+
+            // Fallback: check formatted address
+            if (!empty($result['formatted_address'])) {
+                $formattedAddress = strtolower($result['formatted_address']);
+                if (strpos($formattedAddress, 'tanauan') !== false &&
+                    strpos($formattedAddress, 'batangas') !== false) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
 }
