@@ -84,7 +84,7 @@ class AIController extends Controller
 
         Log::info('Crime data fetched', ['crime_count' => count($crimeData)]);
 
-        // Use Google Routes API (newer API)
+        // Check if Google Maps API key is configured
         $mapsKey = env('GOOGLE_MAPS_API_KEY');
         if (!$mapsKey) {
             return response()->json([
@@ -93,66 +93,13 @@ class AIController extends Controller
             ], 500);
         }
 
-        $routesUrl = "https://routes.googleapis.com/directions/v2:computeRoutes";
-
-        $requestBody = [
-            'origin' => [
-                'location' => [
-                    'latLng' => [
-                        'latitude' => (float)$request->start_lat,
-                        'longitude' => (float)$request->start_lng
-                    ]
-                ]
-            ],
-            'destination' => [
-                'location' => [
-                    'latLng' => [
-                        'latitude' => (float)$request->end_lat,
-                        'longitude' => (float)$request->end_lng
-                    ]
-                ]
-            ],
-            'travelMode' => 'DRIVE',
-            'routingPreference' => 'TRAFFIC_AWARE_OPTIMAL',
-            'computeAlternativeRoutes' => true,
-            'routeModifiers' => [
-                'avoidTolls' => false,
-                'avoidHighways' => false,
-                'avoidFerries' => false
-            ],
-            'languageCode' => 'en-US',
-            'units' => 'METRIC'
-        ];
-
-        Log::info('Calling Google Routes API', ['url' => $routesUrl]);
-
-        $routesResponse = Http::withHeaders([
-            'Content-Type' => 'application/json',
-            'X-Goog-Api-Key' => $mapsKey,
-            'X-Goog-FieldMask' => 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.legs.steps.navigationInstruction,routes.description'
-        ])->timeout(30)->post($routesUrl, $requestBody);
-
-        Log::info('Google Routes API Response', [
-            'status_code' => $routesResponse->status(),
-            'success' => $routesResponse->successful(),
-            'response_preview' => substr($routesResponse->body(), 0, 500) . '...'
-        ]);
-
-        if ($routesResponse->failed()) {
-            // Fallback to legacy Directions API if Routes API fails
-            return $this->fallbackToDirectionsAPI($request, $crimeData);
-        }
-
-        $routesData = $routesResponse->json();
-        $routes = $routesData['routes'] ?? [];
+        // Get multiple route options using different preferences
+        $routes = $this->getMultipleRouteOptions($request);
 
         if (empty($routes)) {
-            Log::warning('No routes found from Google Routes API');
-            return response()->json([
-                'success' => false,
-                'message' => 'No routes found',
-                'api_response' => $routesData
-            ], 404);
+            Log::warning('No routes found from Google Routes API with multiple preferences');
+            // Fallback to legacy Directions API
+            return $this->fallbackToDirectionsAPI($request, $crimeData);
         }
 
         // Calculate safety scores for each route
@@ -164,6 +111,30 @@ class AIController extends Controller
         });
 
         $safestRoute = $routesWithScores[0];
+
+        // Define safety threshold
+        $SAFETY_THRESHOLD = 5.0; // Adjust this value based on your needs
+
+        if ($safestRoute['safety_score'] > $SAFETY_THRESHOLD) {
+            Log::warning('All routes exceed safety threshold', [
+                'best_score' => $safestRoute['safety_score'],
+                'threshold' => $SAFETY_THRESHOLD
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'No safe routes available. All routes pass through high-crime areas.',
+                'best_available_score' => $safestRoute['safety_score'],
+                'safety_threshold' => $SAFETY_THRESHOLD,
+                'recommendation' => 'Consider traveling at a different time or using public transportation.',
+                'route_data' => $safestRoute,
+                'crime_analysis' => [
+                    'total_crimes_in_area' => count($crimeData),
+                    'crimes_near_route' => $safestRoute['crimes_near_route'],
+                    'high_severity_crimes' => $safestRoute['high_severity_crimes']
+                ]
+            ], 200); // Use 200 so the app can handle it gracefully
+        }
 
         Log::info('Route safety analysis completed', [
             'routes_analyzed' => count($routesWithScores),
@@ -185,6 +156,97 @@ class AIController extends Controller
             'alternative_routes' => array_slice($routesWithScores, 1, 2),
             'api_used' => 'routes_api'
         ]);
+    }
+
+    /**
+     * Get multiple route options using different routing preferences
+     */
+    private function getMultipleRouteOptions(Request $request): array
+    {
+        $mapsKey = env('GOOGLE_MAPS_API_KEY');
+        $routesUrl = "https://routes.googleapis.com/directions/v2:computeRoutes";
+
+        $baseRequest = [
+            'origin' => [
+                'location' => [
+                    'latLng' => [
+                        'latitude' => (float)$request->start_lat,
+                        'longitude' => (float)$request->start_lng
+                    ]
+                ]
+            ],
+            'destination' => [
+                'location' => [
+                    'latLng' => [
+                        'latitude' => (float)$request->end_lat,
+                        'longitude' => (float)$request->end_lng
+                    ]
+                ]
+            ],
+            'travelMode' => 'DRIVE',
+            'languageCode' => 'en-US',
+            'units' => 'METRIC'
+        ];
+
+        // Try different routing preferences to get more route options
+        $preferences = [
+            ['routingPreference' => 'TRAFFIC_AWARE_OPTIMAL', 'computeAlternativeRoutes' => true],
+            ['routingPreference' => 'TRAFFIC_AWARE', 'routeModifiers' => ['avoidHighways' => true]],
+            ['routingPreference' => 'TRAFFIC_AWARE', 'routeModifiers' => ['avoidTolls' => true]],
+            ['routingPreference' => 'TRAFFIC_UNAWARE'],
+        ];
+
+        $allRoutes = [];
+        foreach ($preferences as $preference) {
+            $requestBody = array_merge($baseRequest, $preference);
+
+            Log::info('Making Routes API call with preference', ['preference' => $preference]);
+
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'X-Goog-Api-Key' => $mapsKey,
+                'X-Goog-FieldMask' => 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.legs.steps.navigationInstruction,routes.description'
+            ])->timeout(30)->post($routesUrl, $requestBody);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                if (!empty($data['routes'])) {
+                    $allRoutes = array_merge($allRoutes, $data['routes']);
+                    Log::info('Added routes from preference', [
+                        'preference' => $preference['routingPreference'],
+                        'routes_count' => count($data['routes'])
+                    ]);
+                }
+            } else {
+                Log::warning('Routes API call failed', [
+                    'preference' => $preference,
+                    'status' => $response->status(),
+                    'error' => $response->body()
+                ]);
+            }
+        }
+
+        // Remove duplicate routes (same polyline)
+        $uniqueRoutes = [];
+        $seenPolylines = [];
+        foreach ($allRoutes as $route) {
+            $polyline = $route['polyline']['encodedPolyline'] ?? '';
+            if (!empty($polyline) && !in_array($polyline, $seenPolylines)) {
+                $uniqueRoutes[] = $route;
+                $seenPolylines[] = $polyline;
+            }
+        }
+
+     Log::info('Route deduplication completed', [
+         'total_routes_fetched' => count($allRoutes),
+         'unique_routes' => count($uniqueRoutes),
+         'unique_polylines' => array_values(array_filter(array_map(function($r) {
+             return $r['polyline']['encodedPolyline'] ?? ($r['overview_polyline']['points'] ?? null);
+         }, $uniqueRoutes))),
+         'seen_polylines' => $seenPolylines
+     ]);
+
+        return $uniqueRoutes;
     }
 
     /**
@@ -300,11 +362,11 @@ class AIController extends Controller
                     $polylinePoints
                 );
 
-                // Crime affects safety if within 1km of route
-                if ($minDistance <= 1.0) {
+                // Crime affects safety if within 250m (0.25km) of route
+                if ($minDistance <= 0.25) {
                     $crimesNearRoute++;
 
-                    $distanceWeight = max(0, 1 - ($minDistance / 1.0));
+                    $distanceWeight = max(0, 1 - ($minDistance / 0.25));
                     $severityWeight = $severityWeights[strtolower($crime['severity'])] ?? 1;
 
                     // Recent crimes have higher impact
