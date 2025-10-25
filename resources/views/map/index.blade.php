@@ -485,14 +485,26 @@
         }
 
         function addMarker(report) {
-            if (!report.latitude || !report.longitude) return;
+            if (!report) return;
 
-            const position = { lat: parseFloat(report.latitude), lng: parseFloat(report.longitude) };
+            // Validate coordinates
+            const lat = parseFloat(report.latitude);
+            const lng = parseFloat(report.longitude);
+            if (Number.isNaN(lat) || Number.isNaN(lng)) return;
+            const position = { lat, lng };
 
-            // Choose marker color based on severity
-            let markerColor;
-            let severityBadge;
-            switch (report.severity) {
+            // Normalized fields
+            const severity = (report.severity || 'unknown').toString().toLowerCase();
+            const status = (report.status || 'unknown').toString().toLowerCase();
+            const title = report.title || 'Untitled';
+            const description = report.description || '';
+            const address = report.address || 'N/A';
+            const incidentDate = report.incident_date ? new Date(report.incident_date).toLocaleDateString() : 'N/A';
+
+            // Choose marker color / badge
+            let markerColor = 'blue';
+            let severityBadge = 'primary';
+            switch (severity) {
                 case 'critical':
                     markerColor = 'red';
                     severityBadge = 'danger';
@@ -509,101 +521,99 @@
                     markerColor = 'green';
                     severityBadge = 'success';
                     break;
-                default:
-                    markerColor = 'blue';
-                    severityBadge = 'primary';
             }
 
             const marker = new google.maps.Marker({
-                position: position,
-                map: map,
-                title: report.title,
+                position,
+                map,
+                title,
                 icon: `https://maps.google.com/mapfiles/ms/icons/${markerColor}-dot.png`,
                 animation: google.maps.Animation.DROP
             });
 
-            // Store report data with marker
+            // Store report data with marker for reliable filtering
             marker.reportData = report;
 
-            // Create enhanced info window content
+            // Safe info content
+            const safeDesc = description.length > 120 ? description.substring(0, 120) + '...' : description;
+            const statusBadgeClass = status === 'resolved' ? 'success' : (status === 'under_investigation' ? 'warning' : 'secondary');
+
             const infoContent = `
                 <div style="max-width: 320px; font-family: 'Segoe UI', Arial, sans-serif;">
                     <div style="border-bottom: 2px solid #0d6efd; padding-bottom: 10px; margin-bottom: 15px;">
-                        <h6 style="margin: 0; color: #0d6efd; font-weight: 600;">${report.title}</h6>
+                        <h6 style="margin: 0; color: #0d6efd; font-weight: 600;">${title}</h6>
                     </div>
-
                     <div style="margin-bottom: 12px;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
                             <span><strong>Severity:</strong></span>
-                            <span class="badge bg-${severityBadge}" style="font-size: 0.75rem;">${report.severity.toUpperCase()}</span>
+                            <span class="badge bg-${severityBadge}" style="font-size: 0.75rem;">${severity.toUpperCase()}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
                             <span><strong>Status:</strong></span>
-                            <span class="badge bg-${report.status === 'resolved' ? 'success' : (report.status === 'under_investigation' ? 'warning' : 'secondary')}" style="font-size: 0.75rem;">${report.status.replace('_', ' ').toUpperCase()}</span>
+                            <span class="badge bg-${statusBadgeClass}" style="font-size: 0.75rem;">${status.replace('_', ' ').toUpperCase()}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
                             <span><strong>Date:</strong></span>
-                            <span style="color: #6c757d;">${new Date(report.incident_date).toLocaleDateString()}</span>
+                            <span style="color: #6c757d;">${incidentDate}</span>
                         </div>
                         <div style="margin-bottom: 8px;">
                             <strong>Address:</strong><br>
-                            <span style="color: #6c757d; font-size: 0.9em;">${report.address || 'N/A'}</span>
+                            <span style="color: #6c757d; font-size: 0.9em;">${address}</span>
                         </div>
                     </div>
-
                     <div style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
                         <strong style="color: #495057;">Description:</strong><br>
                         <span style="color: #6c757d; font-size: 0.9em; line-height: 1.4;">
-                            ${report.description.length > 120 ? report.description.substring(0, 120) + '...' : report.description}
+                            ${safeDesc}
                         </span>
                     </div>
-
-
                 </div>
             `;
 
-            // Add click listener to marker
+            // Add click listener
             marker.addListener('click', () => {
                 infoWindow.setContent(infoContent);
                 infoWindow.open(map, marker);
-
-                // Bounce animation
                 marker.setAnimation(google.maps.Animation.BOUNCE);
                 setTimeout(() => marker.setAnimation(null), 1400);
             });
 
             markers.push(marker);
-        }
+         }
 
-        // Filter functions
-        function filterBySeverity(severity) {
+         // Filter functions
+         function filterBySeverity(severity) {
             markers.forEach(marker => {
-                if (severity === 'all' || marker.reportData.severity === severity) {
+                const r = marker.reportData || {};
+                const reportSeverity = (r.severity || 'unknown').toString().toLowerCase();
+                if (severity === 'all' || reportSeverity === severity) {
                     marker.setVisible(true);
                 } else {
                     marker.setVisible(false);
                 }
             });
             infoWindow.close();
-        }
+         }
 
-        function filterByStatus(status) {
+         function filterByStatus(status) {
             markers.forEach(marker => {
-                if (status === 'all' || marker.reportData.status === status) {
+                const r = marker.reportData || {};
+                const reportStatus = (r.status || 'unknown').toString().toLowerCase();
+                if (status === 'all' || reportStatus === status) {
                     marker.setVisible(true);
                 } else {
                     marker.setVisible(false);
                 }
             });
             infoWindow.close();
-        }
+         }
 
-        function centerMap() {
+         function centerMap() {
             const tanauanCity = { lat: 14.0865, lng: 121.1488 };
             map.setCenter(tanauanCity);
             map.setZoom(13);
             infoWindow.close();
-        }
+         }
 
         // Auto-dismiss alerts after 8 seconds
         document.addEventListener('DOMContentLoaded', function() {

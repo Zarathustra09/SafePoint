@@ -85,13 +85,25 @@
         }
 
         function addMarker(report) {
-            if (!report.latitude || !report.longitude) return;
+            if (!report) return;
 
-            const position = { lat: parseFloat(report.latitude), lng: parseFloat(report.longitude) };
+            // Validate coordinates
+            const lat = parseFloat(report.latitude);
+            const lng = parseFloat(report.longitude);
+            if (Number.isNaN(lat) || Number.isNaN(lng)) return;
+            const position = { lat, lng };
+
+            // Normalize severity/status/title/description/address/date
+            const severity = (report.severity || 'unknown').toString().toLowerCase();
+            const status = (report.status || 'unknown').toString().toLowerCase();
+            const title = report.title || 'Untitled';
+            const description = report.description || '';
+            const address = report.address || 'N/A';
+            const incidentDate = report.incident_date ? new Date(report.incident_date).toLocaleDateString() : 'N/A';
 
             // Choose marker color based on severity
             let markerColor;
-            switch (report.severity) {
+            switch (severity) {
                 case 'critical':
                     markerColor = 'red';
                     break;
@@ -109,25 +121,29 @@
             }
 
             const marker = new google.maps.Marker({
-                position: position,
-                map: map,
-                title: report.title,
+                position,
+                map,
+                title,
                 icon: `https://maps.google.com/mapfiles/ms/icons/${markerColor}-dot.png`
             });
 
-            // Create info window content
+            // Create info window content safely
+            const severityBadgeClass = severity === 'critical' ? 'danger' : (severity === 'high' ? 'warning' : (severity === 'medium' ? 'info' : 'secondary'));
+            const statusBadgeClass = status === 'resolved' ? 'success' : (status === 'under_investigation' ? 'warning' : 'secondary');
+            const shortDesc = description.length > 100 ? description.substring(0, 100) + '...' : description;
+
             const infoContent = `
                 <div style="max-width: 300px;">
-                    <h6 class="mb-2">${report.title}</h6>
+                    <h6 class="mb-2">${title}</h6>
                     <p class="mb-1"><strong>Severity:</strong>
-                        <span class="badge bg-${report.severity === 'critical' ? 'danger' : (report.severity === 'high' ? 'warning' : (report.severity === 'medium' ? 'info' : 'secondary'))}">${report.severity}</span>
+                        <span class="badge bg-${severityBadgeClass}">${severity}</span>
                     </p>
                     <p class="mb-1"><strong>Status:</strong>
-                        <span class="badge bg-${report.status === 'resolved' ? 'success' : (report.status === 'under_investigation' ? 'warning' : 'secondary')}">${report.status.replace('_', ' ')}</span>
+                        <span class="badge bg-${statusBadgeClass}">${status.replace('_', ' ')}</span>
                     </p>
-                    <p class="mb-1"><strong>Date:</strong> ${new Date(report.incident_date).toLocaleDateString()}</p>
-                    <p class="mb-2"><strong>Address:</strong> ${report.address || 'N/A'}</p>
-                    <p class="mb-2">${report.description.length > 100 ? report.description.substring(0, 100) + '...' : report.description}</p>
+                    <p class="mb-1"><strong>Date:</strong> ${incidentDate}</p>
+                    <p class="mb-2"><strong>Address:</strong> ${address}</p>
+                    <p class="mb-2">${shortDesc}</p>
                     <div class="btn-group btn-group-sm">
                         <a href="/reports/${report.id}" class="btn btn-primary btn-sm">View Details</a>
                         <a href="/reports/${report.id}/edit" class="btn btn-secondary btn-sm">Edit</a>
@@ -135,20 +151,22 @@
                 </div>
             `;
 
-            // Add click listener to marker
             marker.addListener('click', () => {
                 infoWindow.setContent(infoContent);
                 infoWindow.open(map, marker);
             });
 
+            // Attach original report to marker for reliable filtering
+            marker.__report = report;
             markers.push(marker);
         }
 
         // Filter functions
         function filterBySeverity(severity) {
             markers.forEach(marker => {
-                const report = crimeReports.find(r => r.title === marker.getTitle());
-                if (severity === 'all' || report.severity === severity) {
+                const r = marker.__report || {};
+                const reportSeverity = (r.severity || 'unknown').toString().toLowerCase();
+                if (severity === 'all' || reportSeverity === severity) {
                     marker.setVisible(true);
                 } else {
                     marker.setVisible(false);
@@ -158,8 +176,9 @@
 
         function filterByStatus(status) {
             markers.forEach(marker => {
-                const report = crimeReports.find(r => r.title === marker.getTitle());
-                if (status === 'all' || report.status === status) {
+                const r = marker.__report || {};
+                const reportStatus = (r.status || 'unknown').toString().toLowerCase();
+                if (status === 'all' || reportStatus === status) {
                     marker.setVisible(true);
                 } else {
                     marker.setVisible(false);
