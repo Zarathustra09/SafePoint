@@ -12,7 +12,7 @@ class RoleController extends Controller
 {
     public function index()
     {
-        $users = User::all();
+        $users = User::with('roles')->paginate(15);
         return view('roles.index', compact('users'));
     }
 

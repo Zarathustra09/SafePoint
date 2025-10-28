@@ -10,11 +10,30 @@
                             <h4>AI Crime Map</h4>
                             <small class="text-muted">Crime reports in Tanauan City, Batangas</small>
                         </div>
-{{--                        <div>--}}
-{{--                            <a href="{{ route('reports.create') }}" class="btn btn-primary">--}}
-{{--                                <i class="fas fa-plus"></i> Create Report--}}
-{{--                            </a>--}}
-{{--                        </div>--}}
+                        <!-- Filter Controls -->
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle btn-sm" type="button"
+                                data-bs-toggle="dropdown" id="filterButton">
+                                <i class="fas fa-filter"></i> Filter by Severity: <span id="currentFilter">All</span>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item active" href="#" onclick="filterBySeverity('all')">
+                                        <i class="fas fa-list me-2"></i>All
+                                    </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="filterBySeverity('critical')">
+                                        <i class="fas fa-exclamation-triangle text-danger me-2"></i>Critical
+                                    </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="filterBySeverity('high')">
+                                        <i class="fas fa-exclamation-circle text-warning me-2"></i>High
+                                    </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="filterBySeverity('medium')">
+                                        <i class="fas fa-info-circle text-info me-2"></i>Medium
+                                    </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="filterBySeverity('low')">
+                                        <i class="fas fa-check-circle text-success me-2"></i>Low
+                                    </a></li>
+                            </ul>
+                        </div>
                     </div>
                     <div class="card-body p-0">
                         <div id="map" style="height: 600px; width: 100%;"></div>
@@ -39,8 +58,7 @@
         </div>
     </div>
 
-    <script async defer
-        src="https://maps.googleapis.com/maps/api/js?key={{env('GOOGLE_MAPS_API_KEY')}}&callback=initMap">
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_MAPS_API_KEY') }}&callback=initMap">
     </script>
 
     <script>
@@ -53,7 +71,10 @@
 
         function initMap() {
             // Default location - Tanauan City, Batangas, Philippines
-            const tanauanCity = { lat: 14.0865, lng: 121.1488 };
+            const tanauanCity = {
+                lat: 14.0865,
+                lng: 121.1488
+            };
 
             // Initialize map
             map = new google.maps.Map(document.getElementById("map"), {
@@ -91,7 +112,10 @@
             const lat = parseFloat(report.latitude);
             const lng = parseFloat(report.longitude);
             if (Number.isNaN(lat) || Number.isNaN(lng)) return;
-            const position = { lat, lng };
+            const position = {
+                lat,
+                lng
+            };
 
             // Normalize severity/status/title/description/address/date
             const severity = (report.severity || 'unknown').toString().toLowerCase();
@@ -128,8 +152,10 @@
             });
 
             // Create info window content safely
-            const severityBadgeClass = severity === 'critical' ? 'danger' : (severity === 'high' ? 'warning' : (severity === 'medium' ? 'info' : 'secondary'));
-            const statusBadgeClass = status === 'resolved' ? 'success' : (status === 'under_investigation' ? 'warning' : 'secondary');
+            const severityBadgeClass = severity === 'critical' ? 'danger' : (severity === 'high' ? 'warning' : (severity ===
+                'medium' ? 'info' : 'secondary'));
+            const statusBadgeClass = status === 'resolved' ? 'success' : (status === 'under_investigation' ? 'warning' :
+                'secondary');
             const shortDesc = description.length > 100 ? description.substring(0, 100) + '...' : description;
 
             const infoContent = `
@@ -163,6 +189,29 @@
 
         // Filter functions
         function filterBySeverity(severity) {
+            // Update button text
+            const filterNames = {
+                'all': 'All',
+                'critical': 'Critical',
+                'high': 'High',
+                'medium': 'Medium',
+                'low': 'Low'
+            };
+            document.getElementById('currentFilter').textContent = filterNames[severity] || 'All';
+
+            // Update active state in dropdown
+            const dropdownItems = document.querySelectorAll('.dropdown-item');
+            dropdownItems.forEach(item => item.classList.remove('active'));
+
+            // Find and activate the selected item
+            const selectedItem = Array.from(dropdownItems).find(item =>
+                item.getAttribute('onclick')?.includes(`'${severity}'`)
+            );
+            if (selectedItem) {
+                selectedItem.classList.add('active');
+            }
+
+            // Apply the filter
             markers.forEach(marker => {
                 const r = marker.__report || {};
                 const reportSeverity = (r.severity || 'unknown').toString().toLowerCase();
@@ -172,6 +221,7 @@
                     marker.setVisible(false);
                 }
             });
+            infoWindow.close();
         }
 
         function filterByStatus(status) {
@@ -187,7 +237,7 @@
         }
     </script>
 
-    @if(session('success'))
+    @if (session('success'))
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 const alertDiv = document.createElement('div');

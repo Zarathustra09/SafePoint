@@ -22,6 +22,13 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
     Route::put('/announcements/{announcement}/image/{imageId}', [AnnouncementController::class, 'updateImage']);
     Route::delete('/announcements/{announcement}/image/{imageId}', [AnnouncementController::class, 'deleteImage']);
     Route::resource('/announcements', AnnouncementController::class);
+
+    // User management routes
+    Route::get('/admin/users', [App\Http\Controllers\UserController::class, 'index'])->name('admin.users.index');
+    Route::post('/admin/users/{user}/toggle-blocked', [App\Http\Controllers\UserController::class, 'toggleBlocked'])->name('admin.users.toggle-blocked');
+    Route::post('/admin/users/{user}/toggle-restricted', [App\Http\Controllers\UserController::class, 'toggleRestricted'])->name('admin.users.toggle-restricted');
+    Route::get('/admin/users/{user}/edit', [App\Http\Controllers\UserController::class, 'edit'])->name('admin.users.edit');
+    Route::put('/admin/users/{user}', [App\Http\Controllers\UserController::class, 'update'])->name('admin.users.update');
 });
 
 // Fix the routes order to prioritize named routes before parameter routes
@@ -32,8 +39,6 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [App\Http\Controllers\ProfileController::class, 'destroy'])->name('profile.destroy');
 });
-
-
 
 Route::prefix('approval')->middleware(['auth'])->group(function () {
     Route::get('/', [ApprovalController::class, 'index'])->name('approval.index');
