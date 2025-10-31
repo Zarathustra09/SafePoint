@@ -11,7 +11,7 @@
                             <small class="text-muted">Manage user roles and permissions</small>
                         </div>
                         <div>
-                            <span class="badge bg-info">{{ $users->total() }} Total Users</span>
+                            <span class="badge bg-info">{{ $users->count() }} Total Users</span>
                         </div>
                     </div>
                     <div class="card-body">
@@ -87,7 +87,7 @@
                                                         @else
                                                             <form method="POST"
                                                                 action="{{ route('roles.demoteAdmin', $user->id) }}"
-                                                                style="display: inline;">
+                                                                style="display: none;">
                                                                 @csrf
                                                                 <button type="submit" class="btn btn-danger btn-sm mb-1"
                                                                     onclick="return confirm('Are you sure you want to demote {{ $user->name }} from Admin?')">
@@ -148,12 +148,6 @@
                                     </tbody>
                                 </table>
                             </div>
-                            <!-- Pagination -->
-                            @if ($users->hasPages())
-                                <div class="d-flex justify-content-center mt-4">
-                                    {{ $users->links() }}
-                                </div>
-                            @endif
                         @else
                             <div class="text-center py-4">
                                 <i class="bx bx-user-x display-4 text-muted"></i>
@@ -231,17 +225,16 @@
         $(document).ready(function() {
             if ($.fn.DataTable) {
                 $('#usersTable').DataTable({
-                    "pageLength": 15,
                     "responsive": true,
                     "language": {
                         "search": "Search users:",
-                        "lengthMenu": "Show _MENU_ users per page",
-                        "info": "Showing _START_ to _END_ of _TOTAL_ users"
+                        "info": "Total _TOTAL_ users"
                     },
-                    "paging": false, // Disable DataTable pagination since we use Laravel pagination
+                    "paging": false, // Disable pagination entirely
                     "searching": true,
                     "info": true,
-                    "ordering": true
+                    "ordering": true,
+                    "lengthChange": false
                 });
             }
         });

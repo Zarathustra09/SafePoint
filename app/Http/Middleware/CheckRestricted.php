@@ -17,11 +17,13 @@ class CheckRestricted
     public function handle(Request $request, Closure $next): Response
     {
         if (Auth::check() && Auth::user()->is_restricted) {
-            // Add a warning to the session that will be displayed to the user
-            if (!$request->session()->has('restriction_warning_shown')) {
-                $request->session()->flash('warning', 'Your account is currently restricted. Some features may be limited.');
-                $request->session()->put('restriction_warning_shown', true);
-            }
+            Auth::logout();
+
+            // Clear any session data
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect('/login')->with('error', 'Your account has been restricted. Please contact an administrator.');
         }
 
         return $next($request);

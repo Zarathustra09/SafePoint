@@ -3,6 +3,13 @@
 @section('content')
     <h2 class="text-center mb-4">{{ __('Login') }}</h2>
 
+    @if (session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>{{ session('error') }}</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
     <form method="POST" action="{{ route('login') }}" autocomplete="on">
         @csrf
 
