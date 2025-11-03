@@ -1,42 +1,103 @@
 @extends('layouts.admin.app')
 
 @section('content')
+    <style>
+        .search-container {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-input-wrapper {
+            flex: 1;
+            min-width: 300px;
+            max-width: 500px;
+        }
+
+        #map {
+            height: 600px;
+            width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .search-container {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-input-wrapper {
+                min-width: 100%;
+                max-width: 100%;
+            }
+
+            #map {
+                height: 500px;
+            }
+        }
+    </style>
+
     <div class="container-fluid">
         <div class="row">
             <div class="col-12">
                 <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <div>
-                            <h4>AI Crime Map</h4>
-                            <small class="text-muted">Crime reports in Tanauan City, Batangas</small>
-                        </div>
-                        <!-- Filter Controls -->
-                        <div class="dropdown">
-                            <button class="btn btn-outline-secondary dropdown-toggle btn-sm" type="button"
-                                data-bs-toggle="dropdown" id="filterButton">
-                                <i class="fas fa-filter"></i> Filter by Severity: <span id="currentFilter">All</span>
+                    <!-- Header Section -->
+                    <div class="card-header">
+                        <h4><i class="fas fa-map-marked-alt me-2"></i>AI Crime Map</h4>
+                        <small class="text-muted">Crime reports in Tanauan City, Batangas</small>
+                    </div>
+
+                    <!-- Search and Filter Section -->
+                    <div class="card-body border-bottom">
+                        <div class="search-container">
+                            <div class="search-input-wrapper">
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-search"></i>
+                                    </span>
+                                    <input type="text" class="form-control" id="mapSearch"
+                                        placeholder="Search by title, description, or address...">
+                                </div>
+                            </div>
+
+                            <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
+                                <i class="fas fa-times"></i> Clear
                             </button>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item active" href="#" onclick="filterBySeverity('all')">
-                                        <i class="fas fa-list me-2"></i>All
-                                    </a></li>
-                                <li><a class="dropdown-item" href="#" onclick="filterBySeverity('critical')">
-                                        <i class="fas fa-exclamation-triangle text-danger me-2"></i>Critical
-                                    </a></li>
-                                <li><a class="dropdown-item" href="#" onclick="filterBySeverity('high')">
-                                        <i class="fas fa-exclamation-circle text-warning me-2"></i>High
-                                    </a></li>
-                                <li><a class="dropdown-item" href="#" onclick="filterBySeverity('medium')">
-                                        <i class="fas fa-info-circle text-info me-2"></i>Medium
-                                    </a></li>
-                                <li><a class="dropdown-item" href="#" onclick="filterBySeverity('low')">
-                                        <i class="fas fa-check-circle text-success me-2"></i>Low
-                                    </a></li>
-                            </ul>
+
+                            <span id="searchResults" class="text-muted"></span>
+
+                            <div class="dropdown ms-auto">
+                                <button class="btn btn-outline-secondary dropdown-toggle" type="button"
+                                    data-bs-toggle="dropdown" id="filterButton">
+                                    <i class="fas fa-filter"></i> Filter: <span id="currentFilter">All</span>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item active" href="#" onclick="filterBySeverity('all')">
+                                            <i class="fas fa-list me-2"></i>All Severity Levels
+                                        </a></li>
+                                    <li>
+                                        <hr class="dropdown-divider">
+                                    </li>
+                                    <li><a class="dropdown-item" href="#" onclick="filterBySeverity('critical')">
+                                            <i class="fas fa-exclamation-triangle text-danger me-2"></i>Critical
+                                        </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="filterBySeverity('high')">
+                                            <i class="fas fa-exclamation-circle text-warning me-2"></i>High
+                                        </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="filterBySeverity('medium')">
+                                            <i class="fas fa-info-circle text-info me-2"></i>Medium
+                                        </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="filterBySeverity('low')">
+                                            <i class="fas fa-check-circle text-success me-2"></i>Low
+                                        </a></li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- Map Section -->
                     <div class="card-body p-0">
-                        <div id="map" style="height: 600px; width: 100%;"></div>
+                        <div id="map"></div>
                     </div>
                 </div>
             </div>
@@ -65,6 +126,8 @@
         let map;
         let markers = [];
         let infoWindow;
+        let currentSearchTerm = '';
+        let currentSeverityFilter = 'all';
 
         // Crime reports data
         const crimeReports = @json($crimeReports);
@@ -103,6 +166,94 @@
                     map.setZoom(15);
                 }
             }
+
+            // Setup search functionality
+            setupSearch();
+        }
+
+        function setupSearch() {
+            const searchInput = document.getElementById('mapSearch');
+
+            // Debounce search to avoid too many updates
+            let searchTimeout;
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    currentSearchTerm = this.value.toLowerCase().trim();
+                    applyFilters();
+                }, 300);
+            });
+
+            // Search on Enter key
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    currentSearchTerm = this.value.toLowerCase().trim();
+                    applyFilters();
+                }
+            });
+        }
+
+        function clearSearch() {
+            document.getElementById('mapSearch').value = '';
+            currentSearchTerm = '';
+            applyFilters();
+        }
+
+        function applyFilters() {
+            let visibleCount = 0;
+            const bounds = new google.maps.LatLngBounds();
+            let hasVisibleMarkers = false;
+
+            markers.forEach(marker => {
+                const report = marker.__report || {};
+                const title = (report.title || '').toLowerCase();
+                const description = (report.description || '').toLowerCase();
+                const address = (report.address || '').toLowerCase();
+                const severity = (report.severity || 'unknown').toLowerCase();
+
+                // Check if marker matches search term
+                const matchesSearch = !currentSearchTerm ||
+                    title.includes(currentSearchTerm) ||
+                    description.includes(currentSearchTerm) ||
+                    address.includes(currentSearchTerm);
+
+                // Check if marker matches severity filter
+                const matchesSeverity = currentSeverityFilter === 'all' ||
+                    severity === currentSeverityFilter;
+
+                // Show marker only if it matches both filters
+                const shouldShow = matchesSearch && matchesSeverity;
+                marker.setVisible(shouldShow);
+
+                if (shouldShow) {
+                    visibleCount++;
+                    bounds.extend(marker.getPosition());
+                    hasVisibleMarkers = true;
+                }
+            });
+
+            // Update search results text
+            const resultsText = document.getElementById('searchResults');
+            if (currentSearchTerm) {
+                resultsText.textContent = `${visibleCount} result(s) found`;
+            } else {
+                resultsText.textContent = '';
+            }
+
+            // Adjust map view to show visible markers
+            if (hasVisibleMarkers) {
+                map.fitBounds(bounds);
+
+                // Add listener to prevent zooming too close
+                google.maps.event.addListenerOnce(map, 'bounds_changed', function() {
+                    if (map.getZoom() > 16) {
+                        map.setZoom(16);
+                    }
+                });
+            }
+
+            // Close info window when filtering
+            infoWindow.close();
         }
 
         function addMarker(report) {
@@ -189,6 +340,8 @@
 
         // Filter functions
         function filterBySeverity(severity) {
+            currentSeverityFilter = severity;
+
             // Update button text
             const filterNames = {
                 'all': 'All',
@@ -211,17 +364,8 @@
                 selectedItem.classList.add('active');
             }
 
-            // Apply the filter
-            markers.forEach(marker => {
-                const r = marker.__report || {};
-                const reportSeverity = (r.severity || 'unknown').toString().toLowerCase();
-                if (severity === 'all' || reportSeverity === severity) {
-                    marker.setVisible(true);
-                } else {
-                    marker.setVisible(false);
-                }
-            });
-            infoWindow.close();
+            // Apply both search and severity filters
+            applyFilters();
         }
 
         function filterByStatus(status) {

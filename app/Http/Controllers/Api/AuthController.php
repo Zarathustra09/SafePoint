@@ -37,12 +37,15 @@ class AuthController extends Controller
                 return response()->json(['error' => 'Account not verified'], 403);
             }
 
+            // Create token with extended expiration for persistent login
+            // Tokens will not expire unless explicitly revoked
             $token = $user->createToken('authToken')->plainTextToken;
 
-            if ($request->remember) {
-                $user->setRememberToken(\Illuminate\Support\Str::random(60));
-                $user->save();
-            }
+            // Always generate and save remember token for persistent login
+            // This allows the user to stay logged in across sessions
+            $rememberToken = \Illuminate\Support\Str::random(60);
+            $user->setRememberToken($rememberToken);
+            $user->save();
 
             if ($request->fcm_token) {
                 $timestamp = $request->timestamp ? Carbon::parse($request->timestamp) : now();
@@ -63,7 +66,7 @@ class AuthController extends Controller
                 'token' => $token,
                 'user_id' => $user->id,
                 'user' => $user,
-                'remember_token' => $request->remember ? $user->getRememberToken() : null,
+                'remember_token' => $rememberToken, // Always return remember token
             ], 200);
         }
 

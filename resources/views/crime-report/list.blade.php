@@ -15,14 +15,14 @@
                                 <i class="bx bx-download"></i> Export to Excel
                             </a>
                         </div>
-{{--                        <div>--}}
-{{--                            <a href="{{ route('reports.create') }}" class="btn btn-primary">--}}
-{{--                                <i class="bx bx-plus"></i> Create Report--}}
-{{--                            </a>--}}
-{{--                        </div>--}}
+                        {{--                        <div> --}}
+                        {{--                            <a href="{{ route('reports.create') }}" class="btn btn-primary"> --}}
+                        {{--                                <i class="bx bx-plus"></i> Create Report --}}
+                        {{--                            </a> --}}
+                        {{--                        </div> --}}
                     </div>
                     <div class="card-body">
-                        @if($crimeReports->count() > 0)
+                        @if ($crimeReports->count() > 0)
                             <div class="table-responsive">
                                 <table class="table table-striped table-hover" id="reports">
                                     <thead class="table-dark">
@@ -38,21 +38,24 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach($crimeReports as $index => $report)
+                                        @foreach ($crimeReports as $index => $report)
                                             <tr>
                                                 <td>{{ $index + 1 }}</td>
                                                 <td>
                                                     <strong>{{ $report->title }}</strong>
                                                     <br>
-                                                    <small class="text-muted">{{ Str::limit($report->description, 60) }}</small>
+                                                    <small
+                                                        class="text-muted">{{ Str::limit($report->description, 60) }}</small>
                                                 </td>
                                                 <td>
-                                                    <span class="badge bg-{{ $report->severity === 'critical' ? 'danger' : ($report->severity === 'high' ? 'warning' : ($report->severity === 'medium' ? 'info' : 'secondary')) }}">
+                                                    <span
+                                                        class="badge bg-{{ $report->severity === 'critical' ? 'danger' : ($report->severity === 'high' ? 'warning' : ($report->severity === 'medium' ? 'info' : 'secondary')) }}">
                                                         {{ ucfirst($report->severity) }}
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <span class="badge bg-{{ $report->status === 'resolved' ? 'success' : ($report->status === 'under_investigation' ? 'warning' : 'secondary') }}">
+                                                    <span
+                                                        class="badge bg-{{ $report->status === 'resolved' ? 'success' : ($report->status === 'under_investigation' ? 'warning' : 'secondary') }}">
                                                         {{ ucfirst(str_replace('_', ' ', $report->status)) }}
                                                     </span>
                                                 </td>
@@ -60,21 +63,28 @@
                                                 <td>
                                                     {{ $report->incident_date->format('M d, Y') }}
                                                     <br>
-                                                    <small class="text-muted">{{ $report->incident_date->format('H:i') }}</small>
+                                                    <small
+                                                        class="text-muted">{{ $report->incident_date->format('H:i') }}</small>
                                                 </td>
                                                 <td>{{ $report->reporter->name ?? 'Unknown' }}</td>
                                                 <td>
                                                     <div class="btn-group btn-group-sm">
-                                                        <a href="{{ route('reports.show', $report) }}" class="btn btn-outline-primary btn-sm" title="View">
+                                                        <a href="{{ route('reports.show', $report) }}"
+                                                            class="btn btn-outline-primary btn-sm" title="View">
                                                             <i class="bx bx-show"></i>
                                                         </a>
-                                                        <a href="{{ route('reports.edit', $report) }}" class="btn btn-outline-secondary btn-sm" title="Edit">
+                                                        <a href="{{ route('reports.edit', $report) }}"
+                                                            class="btn btn-outline-secondary btn-sm" title="Edit">
                                                             <i class="bx bx-edit"></i>
                                                         </a>
-                                                        <form method="POST" action="{{ route('reports.destroy', $report) }}" class="d-inline">
+                                                        <form method="POST"
+                                                            action="{{ route('reports.destroy', $report) }}"
+                                                            class="d-inline">
                                                             @csrf
                                                             @method('DELETE')
-                                                            <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Are you sure you want to delete this report?')" title="Delete">
+                                                            <button type="submit" class="btn btn-outline-danger btn-sm"
+                                                                onclick="return confirm('Are you sure you want to delete this report?')"
+                                                                title="Delete">
                                                                 <i class="bx bx-trash"></i>
                                                             </button>
                                                         </form>
@@ -101,7 +111,7 @@
         </div>
     </div>
 
-    @if(session('success'))
+    @if (session('success'))
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 const alertDiv = document.createElement('div');
@@ -135,13 +145,56 @@
         .dataTables_wrapper .row:first-child {
             margin-bottom: 20px;
         }
+
+        /* Custom severity filter styling */
+        #severityFilter {
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            padding: 0.375rem 0.75rem;
+        }
+
+        #severityFilter:focus {
+            border-color: #86b7fe;
+            outline: 0;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
     </style>
 @endsection
 
 @push('scripts')
     <script>
         $(document).ready(function() {
-            $('#reports').DataTable();
+            // Initialize DataTable
+            var table = $('#reports').DataTable();
+
+            // Add severity filter next to the search box
+            var filterHtml = `
+                <div class="d-inline-block me-3">
+                    <label for="severityFilter" class="form-label me-2 d-inline-block mb-0">Filter by Severity:</label>
+                    <select id="severityFilter" class="form-select d-inline-block" style="width: 150px; min-width: 150px;">
+                        <option value="">All Severities</option>
+                        <option value="critical">Critical</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                </div>
+            `;
+
+            // Insert the filter before the search box
+            $('.dataTables_filter').prepend(filterHtml);
+
+            // Custom severity filter
+            $('#severityFilter').on('change', function() {
+                var severity = $(this).val().toLowerCase();
+
+                // Filter the table based on the severity column (index 2)
+                if (severity === '') {
+                    table.column(2).search('').draw();
+                } else {
+                    table.column(2).search(severity, false, false).draw();
+                }
+            });
         });
     </script>
 @endpush
