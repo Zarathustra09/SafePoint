@@ -74,7 +74,7 @@
                                                 <td>
                                                     <div class="btn-group-vertical" role="group">
                                                         <!-- Role Management -->
-                                                        @if (!$user->hasRole('Admin'))
+                                                        {{-- @if (!$user->hasRole('Admin'))
                                                             <form method="POST"
                                                                 action="{{ route('roles.assignAdmin', $user->id) }}"
                                                                 style="display: inline;">
@@ -94,7 +94,7 @@
                                                                     <i class="bx bx-user-minus"></i> Demote Admin
                                                                 </button>
                                                             </form>
-                                                        @endif
+                                                        @endif --}}
 
                                                         <!-- Account Blocking -->
                                                         @if ($user->is_blocked)
