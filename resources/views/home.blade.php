@@ -35,6 +35,54 @@
             </div>
         </div>
 
+        <!-- Failed Login Attempts Section -->
+        @if($failedLogins->count() > 0)
+        <div class="row g-4 mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="bx bx-error-circle me-2 text-warning"></i>
+                            Recent Failed Login Attempts for Your Account
+                        </h5>
+                        <span class="badge bg-warning">{{ $failedLogins->count() }} attempts</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date & Time</th>
+                                        <th>IP Address</th>
+                                        <th>User Agent</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($failedLogins as $attempt)
+                                    <tr>
+                                        <td>
+                                            <span class="fw-medium">{{ $attempt->created_at->format('M d, Y') }}</span><br>
+                                            <small class="text-muted">{{ $attempt->created_at->format('h:i A') }}</small>
+                                        </td>
+                                        <td>
+                                            <code class="text-danger">{{ $attempt->ip_address }}</code>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted" title="{{ $attempt->user_agent }}">
+                                                {{ Str::limit($attempt->user_agent, 50) }}
+                                            </small>
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
+
         <div class="row g-4">
             <!-- File a Report Card -->
 

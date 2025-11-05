@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Announcement;
 use App\Models\CrimeReport;
+use App\Models\FailedLogin;
 
 class HomeController extends Controller
 {
@@ -36,11 +37,19 @@ class HomeController extends Controller
             ->pluck('count', 'severity')
             ->toArray();
 
+        // Get failed login attempts for the current user's email// Get today's failed login attempts for the current user's email
+        $failedLogins = FailedLogin::where('email', auth()->user()->email)
+            ->whereDate('created_at', now()->toDateString())
+            ->orderBy('created_at', 'desc')
+            ->take(10)
+            ->get();
+
         return view('home', [
             'statusCounts' => $statusCounts,
             'announcementsCount' => $announcementsCount,
             'crimesByDay' => $crimesByDay,
             'crimesBySeverity' => $crimesBySeverity,
+            'failedLogins' => $failedLogins,
         ]);
     }
 }
