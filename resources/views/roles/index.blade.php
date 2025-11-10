@@ -15,7 +15,7 @@
                         </div>
                     </div>
                     <div class="card-body">
-                        @if($users->count() > 0)
+                        @if ($users->count() > 0)
                             <div class="table-responsive">
                                 <table class="table table-striped table-hover" id="usersTable">
                                     <thead class="table-dark">
@@ -25,11 +25,12 @@
                                             <th style="color: white;">Email</th>
                                             <th style="color: white;">Current Roles</th>
                                             <th style="color: white;">Verification Status</th>
+                                            <th style="color: white;">Account Status</th>
                                             <th style="color: white;">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach($users as $index => $user)
+                                        @foreach ($users as $index => $user)
                                             <tr>
                                                 <td>{{ $index + 1 }}</td>
                                                 <td>
@@ -40,7 +41,8 @@
                                                 <td>{{ $user->email }}</td>
                                                 <td>
                                                     @forelse($user->getRoleNames() as $role)
-                                                        <span class="badge bg-{{ $role === 'Admin' ? 'success' : 'info' }} me-1">{{ $role }}</span>
+                                                        <span
+                                                            class="badge bg-{{ $role === 'Admin' ? 'success' : 'info' }} me-1">{{ $role }}</span>
                                                     @empty
                                                         <span class="badge bg-secondary">No Roles</span>
                                                     @endforelse
@@ -51,21 +53,91 @@
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <div class="btn-group" role="group">
-                                                        @if(!$user->hasRole('Admin'))
-                                                            <form method="POST" action="{{ route('roles.assignAdmin', $user->id) }}" style="display: inline;">
+                                                    <div class="d-flex flex-column gap-1">
+                                                        @if ($user->is_blocked)
+                                                            <span class="badge bg-danger">
+                                                                <i class="bx bx-block"></i> Blocked
+                                                            </span>
+                                                        @endif
+                                                        @if ($user->is_restricted)
+                                                            <span class="badge bg-warning">
+                                                                <i class="bx bx-shield-x"></i> Restricted
+                                                            </span>
+                                                        @endif
+                                                        @if (!$user->is_blocked && !$user->is_restricted)
+                                                            <span class="badge bg-success">
+                                                                <i class="bx bx-check"></i> Active
+                                                            </span>
+                                                        @endif
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="btn-group-vertical" role="group">
+                                                        <!-- Role Management -->
+                                                        {{-- @if (!$user->hasRole('Admin'))
+                                                            <form method="POST"
+                                                                action="{{ route('roles.assignAdmin', $user->id) }}"
+                                                                style="display: inline;">
                                                                 @csrf
-                                                                <button type="submit" class="btn btn-primary btn-sm"
-                                                                        onclick="return confirm('Are you sure you want to assign Admin role to {{ $user->name }}?')">
+                                                                <button type="submit" class="btn btn-primary btn-sm mb-1"
+                                                                    onclick="return confirm('Are you sure you want to assign Admin role to {{ $user->name }}?')">
                                                                     <i class="bx bx-user-plus"></i> Assign Admin
                                                                 </button>
                                                             </form>
                                                         @else
-                                                            <form method="POST" action="{{ route('roles.demoteAdmin', $user->id) }}" style="display: inline;">
+                                                            <form method="POST"
+                                                                action="{{ route('roles.demoteAdmin', $user->id) }}"
+                                                                style="display: none;">
                                                                 @csrf
-                                                                <button type="submit" class="btn btn-danger btn-sm"
-                                                                        onclick="return confirm('Are you sure you want to demote {{ $user->name }} from Admin?')">
+                                                                <button type="submit" class="btn btn-danger btn-sm mb-1"
+                                                                    onclick="return confirm('Are you sure you want to demote {{ $user->name }} from Admin?')">
                                                                     <i class="bx bx-user-minus"></i> Demote Admin
+                                                                </button>
+                                                            </form>
+                                                        @endif --}}
+
+                                                        <!-- Account Blocking -->
+                                                        @if ($user->is_blocked)
+                                                            <form method="POST"
+                                                                action="{{ route('admin.users.toggle-blocked', $user->id) }}"
+                                                                style="display: inline;">
+                                                                @csrf
+                                                                <button type="submit" class="btn btn-success btn-sm mb-1"
+                                                                    onclick="return confirm('Are you sure you want to unblock {{ $user->name }}?')">
+                                                                    <i class="bx bx-check"></i> Unblock Account
+                                                                </button>
+                                                            </form>
+                                                        @else
+                                                            <form method="POST"
+                                                                action="{{ route('admin.users.toggle-blocked', $user->id) }}"
+                                                                style="display: inline;">
+                                                                @csrf
+                                                                <button type="submit" class="btn btn-warning btn-sm mb-1"
+                                                                    onclick="return confirm('Are you sure you want to block {{ $user->name }}? This will prevent them from logging in.')">
+                                                                    <i class="bx bx-block"></i> Block Account
+                                                                </button>
+                                                            </form>
+                                                        @endif
+
+                                                        <!-- Account Restriction -->
+                                                        @if ($user->is_restricted)
+                                                            <form method="POST"
+                                                                action="{{ route('admin.users.toggle-restricted', $user->id) }}"
+                                                                style="display: inline;">
+                                                                @csrf
+                                                                <button type="submit" class="btn btn-info btn-sm"
+                                                                    onclick="return confirm('Are you sure you want to remove restrictions from {{ $user->name }}?')">
+                                                                    <i class="bx bx-shield-check"></i> Remove Restriction
+                                                                </button>
+                                                            </form>
+                                                        @else
+                                                            <form method="POST"
+                                                                action="{{ route('admin.users.toggle-restricted', $user->id) }}"
+                                                                style="display: inline;">
+                                                                @csrf
+                                                                <button type="submit" class="btn btn-secondary btn-sm"
+                                                                    onclick="return confirm('Are you sure you want to restrict {{ $user->name }}? They will see warnings but can still access the system.')">
+                                                                    <i class="bx bx-shield-x"></i> Restrict Account
                                                                 </button>
                                                             </form>
                                                         @endif
@@ -89,14 +161,14 @@
         </div>
     </div>
 
-    @if(session('success'))
+    @if (session('success'))
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 const alertDiv = document.createElement('div');
                 alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
                 alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
                 alertDiv.innerHTML = `
-                    <strong>Success!</strong> {{ session('success') }}
+                    <strong>Success!</strong> {!! session('success') !!}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 `;
                 document.body.appendChild(alertDiv);
@@ -111,7 +183,7 @@
         </script>
     @endif
 
-    @if(session('info'))
+    @if (session('info'))
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 const alertDiv = document.createElement('div');
@@ -153,13 +225,16 @@
         $(document).ready(function() {
             if ($.fn.DataTable) {
                 $('#usersTable').DataTable({
-                    "pageLength": 10,
                     "responsive": true,
                     "language": {
                         "search": "Search users:",
-                        "lengthMenu": "Show _MENU_ users per page",
-                        "info": "Showing _START_ to _END_ of _TOTAL_ users"
-                    }
+                        "info": "Total _TOTAL_ users"
+                    },
+                    "paging": false, // Disable pagination entirely
+                    "searching": true,
+                    "info": true,
+                    "ordering": true,
+                    "lengthChange": false
                 });
             }
         });

@@ -3,6 +3,13 @@
 @section('content')
     <h2 class="text-center mb-4">{{ __('Login') }}</h2>
 
+    @if (session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>{{ session('error') }}</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
     <form method="POST" action="{{ route('login') }}" autocomplete="on">
         @csrf
 
@@ -35,10 +42,9 @@
         </div>
 
         <div class="mb-3 form-check">
-            <input class="form-check-input" type="checkbox" name="remember" id="remember"
-                {{ old('remember') ? 'checked' : '' }}>
+            <input class="form-check-input" type="checkbox" name="remember" id="remember" value="1" checked>
             <label class="form-check-label" for="remember">
-                {{ __('Remember Me') }}
+                {{ __('Keep me logged in') }}
             </label>
         </div>
 
@@ -83,6 +89,9 @@
             const rememberedEmail = localStorage.getItem('remembered_email');
             if (rememberedEmail) {
                 emailField.value = rememberedEmail;
+                rememberCheckbox.checked = true;
+            } else {
+                // Check by default for persistent login
                 rememberCheckbox.checked = true;
             }
 

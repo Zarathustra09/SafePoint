@@ -35,7 +35,7 @@
     <link rel="icon" href="{{ asset('new-icon.png') }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @auth
-    <meta name="api-token" content="{{ auth()->user()->createToken('web-token')->plainTextToken }}">
+                    <meta name="api-token" content="{{ auth()->user()->createToken('web-token')->plainTextToken }}">
     @endauth
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -135,87 +135,86 @@
 r -->
 
 @auth
-    <div class="layout-wrapper layout-content-navbar">
-        <div class="layout-container">
-            <!-- Menu -->
-            @include('layouts.admin.header')
+                    <div class="layout-wrapper layout-content-navbar">
+                        <div class="layout-container">
+                            <!-- Menu -->
+                            @include('layouts.admin.header')
 
-            <!-- / Menu -->
+                            <!-- / Menu -->
 
-            <!-- Layout container -->
-            <div class="layout-page">
-                <!-- Navbar -->
+                            <!-- Layout container -->
+                            <div class="layout-page">
+                                <!-- Navbar -->
 
-                <nav
-                    class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme"
-                    id="layout-navbar"
-                >
-                    <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
-                        <a class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)">
-                            <i class="bx bx-menu bx-sm"></i>
-                        </a>
-                    </div>
-
-                    <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
-
-
-                        <ul class="navbar-nav flex-row align-items-center ms-auto">
-                            <!-- Place this tag where you want the button to render. -->
-
-                            <!-- User -->
-                            <li class="nav-item navbar-dropdown dropdown-user dropdown">
-                                <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
-                                    <div class="avatar avatar-online">
-                                        <img src="{{ auth()->user()->profile_picture ? Storage::url(auth()->user()->profile_picture) : 'https://placehold.co/40x40' }}" alt="User Avatar" class="w-px-40 h-px-40 rounded-circle" />
+                                <nav
+                                    class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme"
+                                    id="layout-navbar"
+                                >
+                                    <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
+                                        <a class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)">
+                                            <i class="bx bx-menu bx-sm"></i>
+                                        </a>
                                     </div>
-                                </a>
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                    <li>
-                                        <a class="dropdown-item" href="#">
-                                            <div class="d-flex">
-                                                <div class="flex-shrink-0 me-3">
+
+                                    <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
+
+
+                                        <ul class="navbar-nav flex-row align-items-center ms-auto">
+                                            <!-- Place this tag where you want the button to render. -->
+
+                                            <!-- User -->
+                                            <li class="nav-item navbar-dropdown dropdown-user dropdown">
+                                                <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
                                                     <div class="avatar avatar-online">
                                                         <img src="{{ auth()->user()->profile_picture ? Storage::url(auth()->user()->profile_picture) : 'https://placehold.co/40x40' }}" alt="User Avatar" class="w-px-40 h-px-40 rounded-circle" />
                                                     </div>
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <span class="fw-semibold d-block">{{auth()->user()->name}}</span>
-                                                    <small class="text-muted">Admin Account</small>
-                                                </div>
+                                                </a>
+                                                <ul class="dropdown-menu dropdown-menu-end">
+                                                    <li>
+                                                        <a class="dropdown-item" href="#">
+                                                            <div class="d-flex">
+                                                                <div class="flex-shrink-0 me-3">
+                                                                    <div class="avatar avatar-online">
+                                                                        <img src="{{ auth()->user()->profile_picture ? Storage::url(auth()->user()->profile_picture) : 'https://placehold.co/40x40' }}" alt="User Avatar" class="w-px-40 h-px-40 rounded-circle" />
+                                                                    </div>
+                                                                </div>
+                                                                <div class="flex-grow-1">
+                                                                    <span class="fw-semibold d-block">{{ auth()->user()->name }}</span>
+                                                                    <small class="text-muted">Admin Account</small>
+                                                                </div>
 
-                                            </div>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <div class="dropdown-divider"></div>
-                                    </li>
+                                                            </div>
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <div class="dropdown-divider"></div>
+                                                    </li>
 
-                                    <li>
-                                        <a class="dropdown-item" href="{{route('profile.index')}}">
-                                            {{--                                        <a class="dropdown-item" href="{{route('profile')}}">--}}
-                                            <i class="bx bx-user me-2"></i>
-                                            <span class="align-midd le">My Profile</span>
-                                        </a>
-                                    </li>
+                                                    <li>
+                                                        <a class="dropdown-item" href="{{ route('profile.index') }}">
+                                                            {{--                                        <a class="dropdown-item" href="{{route('profile')}}"> --}}
+                                                            <i class="bx bx-user me-2"></i>
+                                                            <span class="align-midd le">My Profile</span>
+                                                        </a>
+                                                    </li>
 
+                                                    <li>
+                                                        <a class="dropdown-item" href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                                                            <i class="bx bx-power-off me-2"></i>
+                                                            <span class="align-middle">Log Out</span>
+                                                        </a>
+                                                        <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+                                                            @csrf
+                                                        </form>
+                                                    </li>
+                                                </ul>
+                                            </li>
+                                            <!--/ User -->
+                                        </ul>
+                                    </div>
+                                </nav>
 
-                                    <li>
-                                        <a class="dropdown-item" href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                                            <i class="bx bx-power-off me-2"></i>
-                                            <span class="align-middle">Log Out</span>
-                                        </a>
-                                        <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
-                                            @csrf
-                                        </form>
-                                    </li>
-                                </ul>
-                            </li>
-                            <!--/ User -->
-                        </ul>
-                    </div>
-                </nav>
-
-                <!-- / Navbar -->
+                                <!-- / Navbar -->
                 @endauth
                 <!-- Content wrapper -->
                 <div class="content-wrapper">
@@ -224,21 +223,21 @@ r -->
                 </div>
 
                 @auth
-                    <!-- Footer -->
-                    {{--                    @include('layouts.footer')--}}
-                    <!-- / Footer -->
+                                    <!-- Footer -->
+                                    {{--                    @include('layouts.footer') --}}
+                                    <!-- / Footer -->
 
-                    <div class="content-backdrop fade"></div>
-            </div>
-            <!-- Content wrapper -->
-        </div>
-        <!-- / Layout page -->
-    </div>
+                                    <div class="content-backdrop fade"></div>
+                            </div>
+                            <!-- Content wrapper -->
+                        </div>
+                        <!-- / Layout page -->
+                    </div>
 
-    <!-- Overlay -->
-    <div class="layout-overlay layout-menu-toggle"></div>
-    </div>
-    <!-- / Layout wrapper -->
+                    <!-- Overlay -->
+                    <div class="layout-overlay layout-menu-toggle"></div>
+                    </div>
+                    <!-- / Layout wrapper -->
 
 @endauth
 <!-- Core JS -->
@@ -273,23 +272,23 @@ r -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     @if (session('success'))
-    Swal.fire({
-        icon: 'success',
-        title: 'Success',
-        text: '{{ session('success') }}',
-        timer: 3000,
-        showConfirmButton: false
-    });
+        Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: '{{ session('success') }}',
+            timer: 3000,
+            showConfirmButton: false
+        });
     @endif
 
     @if (session('error'))
-    Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: '{{ session('error') }}',
-        timer: 3000,
-        showConfirmButton: false
-    });
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: '{{ session('error') }}',
+            timer: 3000,
+            showConfirmButton: false
+        });
     @endif
 </script>
 @stack('scripts')

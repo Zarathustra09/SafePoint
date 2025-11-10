@@ -13,6 +13,7 @@ class CrimeReportController extends Controller
     public function index()
     {
         $crimeReports = CrimeReport::with('reporter')->get();
+
         return view('crime-report.index', compact('crimeReports'));
     }
 
@@ -44,12 +45,14 @@ class CrimeReportController extends Controller
     public function show($id)
     {
         $crimeReport = CrimeReport::findOrFail($id);
+
         return view('crime-report.show', compact('crimeReport'));
     }
 
     public function edit($id)
     {
         $crimeReport = CrimeReport::findOrFail($id);
+
         return view('crime-report.edit', compact('crimeReport'));
     }
 
@@ -61,8 +64,6 @@ class CrimeReportController extends Controller
         return redirect()->route('reports.index')
             ->with('success', 'Crime report deleted successfully.');
     }
-
-
 
     public function update(Request $request, $id)
     {
@@ -85,56 +86,54 @@ class CrimeReportController extends Controller
             ->with('success', 'Crime report updated successfully.');
     }
 
-     public function list()
-     {
-         $crimeReports = CrimeReport::with('reporter')->get();
-         return view('crime-report.list', compact('crimeReports'));
-     }
+    public function list()
+    {
+        $crimeReports = CrimeReport::with('reporter')->get();
 
-     public function export()
-     {
-         return Excel::download(
-             new class implements \Maatwebsite\Excel\Concerns\FromCollection, \Maatwebsite\Excel\Concerns\WithHeadings, \Maatwebsite\Excel\Concerns\WithMapping, \Maatwebsite\Excel\Concerns\ShouldAutoSize {
-                 public function collection()
-                 {
-                     return CrimeReport::with('reporter')->orderBy('incident_date', 'desc')->get();
-                 }
+        return view('crime-report.list', compact('crimeReports'));
+    }
 
-                 public function headings(): array
-                 {
-                     return [
-                         'ID',
-                         'Title',
-                         'Description',
-                         'Severity',
-                         'Status',
-                         'Address',
-                         'Latitude',
-                         'Longitude',
-                         'Incident Date',
-                         'Reported By',
-                         'Created At',
-                     ];
-                 }
+    public function export()
+    {
+        return Excel::download(
+            new class implements \Maatwebsite\Excel\Concerns\FromCollection, \Maatwebsite\Excel\Concerns\ShouldAutoSize, \Maatwebsite\Excel\Concerns\WithHeadings, \Maatwebsite\Excel\Concerns\WithMapping
+            {
+                public function collection()
+                {
+                    return CrimeReport::with('reporter')->orderBy('incident_date', 'desc')->get();
+                }
 
-                 public function map($report): array
-                 {
-                     return [
-                         $report->id,
-                         $report->title,
-                         $report->description,
-                         ucfirst($report->severity),
-                         ucfirst(str_replace('_', ' ', $report->status)),
-                         $report->address,
-                         $report->latitude,
-                         $report->longitude,
-                         optional($report->incident_date)->format('Y-m-d H:i:s'),
-                         $report->reporter->name ?? 'Unknown',
-                         optional($report->created_at)->format('Y-m-d H:i:s'),
-                     ];
-                 }
-             },
-             'crime-reports-' . now()->format('Y-m-d') . '.xlsx'
-         );
-     }
+                public function headings(): array
+                {
+                    return [
+                        'ID',
+                        'Title',
+                        'Description',
+                        'Severity',
+                        'Status',
+                        'Address',
+                        'Incident Date',
+                        'Reported By',
+                        'Created At',
+                    ];
+                }
+
+                public function map($report): array
+                {
+                    return [
+                        $report->id,
+                        $report->title,
+                        $report->description,
+                        ucfirst($report->severity),
+                        ucfirst(str_replace('_', ' ', $report->status)),
+                        $report->address,
+                        optional($report->incident_date)->format('Y-m-d H:i:s'),
+                        $report->reporter->name ?? 'Unknown',
+                        optional($report->created_at)->format('Y-m-d H:i:s'),
+                    ];
+                }
+            },
+            'crime-reports-'.now()->format('Y-m-d').'.xlsx'
+        );
+    }
 }

@@ -12,7 +12,7 @@ class RoleController extends Controller
 {
     public function index()
     {
-        $users = User::all();
+        $users = User::with('roles')->get();
         return view('roles.index', compact('users'));
     }
 

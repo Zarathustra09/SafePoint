@@ -3,13 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use Illuminate\Http\Request;
+use App\Notifications\AccountRejected;
+use Illuminate\Support\Facades\Auth;
 
 class ApprovalController extends Controller
 {
     public function index()
     {
         $users = User::where('is_verified', false)->get();
+
         return view('approval.index', compact('users'));
     }
 
@@ -28,9 +30,19 @@ class ApprovalController extends Controller
 
     public function reject(User $user)
     {
-        // Optionally, delete or flag the user as rejected
+        // Store user details before deleting
+        $userEmail = $user->email;
+        $userName = $user->name;
+
+        // Send notification immediately (not queued) before deleting
+        $user->notifyNow(new AccountRejected(
+            'Your account application did not meet our verification requirements.',
+            Auth::user()->name
+        ));
+
+        // Delete the user
         $user->delete();
 
-        return redirect()->route('approval.index')->with('status', 'User rejected.');
+        return redirect()->route('approval.index')->with('status', 'User rejected and notified via email.');
     }
 }

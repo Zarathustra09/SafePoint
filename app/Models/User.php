@@ -11,7 +11,7 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasApiTokens, HasRoles;
+    use HasApiTokens, HasFactory, HasRoles, Notifiable;
 
     protected $fillable = [
         'name',
@@ -20,17 +20,18 @@ class User extends Authenticatable
         'password',
         'is_verified',
         'valid_id_image',
-        'address'
+        'address',
+        'is_blocked',
+        'is_restricted',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'is_verified' => 'boolean',
-        ];
-    }
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+        'is_verified' => 'boolean',
+        'is_blocked' => 'boolean',
+        'is_restricted' => 'boolean',
+    ];
 
     public function announcements(): HasMany
     {
@@ -54,7 +55,7 @@ class User extends Authenticatable
             [
                 'device_type' => $deviceType,
                 'last_used_at' => $timestamp ?? now(),
-                'registered_at' => now()
+                'registered_at' => now(),
             ]
         );
     }
@@ -67,21 +68,22 @@ class User extends Authenticatable
     public function updateTokenTimestamp($token)
     {
         return $this->deviceTokens()
-                    ->where('token', $token)
-                    ->update(['last_used_at' => now()]);
+            ->where('token', $token)
+            ->update(['last_used_at' => now()]);
     }
 
     public function removeStaleTokens()
     {
         $cutoffDate = now()->subDays(30);
+
         return $this->deviceTokens()->where('last_used_at', '<', $cutoffDate)->delete();
     }
 
     public function getActiveTokens()
     {
         return $this->deviceTokens()
-                    ->where('last_used_at', '>=', now()->subDays(30))
-                    ->pluck('token')
-                    ->toArray();
+            ->where('last_used_at', '>=', now()->subDays(30))
+            ->pluck('token')
+            ->toArray();
     }
 }
