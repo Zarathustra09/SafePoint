@@ -8,9 +8,32 @@
         </div>
     </div>
 
-    <div class="row g-4">
-        <!-- File a Report Card -->
+    <!-- Charts Section -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-6 col-lg-6">
+            <div class="card h-100">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <h5 class="card-title m-0">Report Status Overview</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6 col-lg-6">
+            <div class="card h-100">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <h5 class="card-title m-0">Login Attempts (Last 7 Days)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="loginChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <!-- Button Cards Section -->
+    <div class="row g-4 mb-4">
         <!-- View Map Card -->
         <div class="col-xl-4 col-lg-4 col-md-6">
             <div class="card h-100">
@@ -59,7 +82,49 @@
                 </div>
             </div>
         </div>
+    </div>
 
+    <!-- Login Attempts Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <h5 class="card-title m-0">Recent Login Attempts</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>IP Address</th>
+                                    <th>Status</th>
+                                    <th>Timestamp</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($loginAttempts ?? [] as $attempt)
+                                <tr>
+                                    <td>{{ $attempt->email ?? 'N/A' }}</td>
+                                    <td>{{ $attempt->ip_address }}</td>
+                                    <td>
+                                        <span class="badge {{ $attempt->successful ? 'bg-success' : 'bg-danger' }}">
+                                            {{ $attempt->successful ? 'Success' : 'Failed' }}
+                                        </span>
+                                    </td>
+                                    <td>{{ $attempt->created_at->format('M d, Y H:i') }}</td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="4" class="text-center">No recent login attempts</td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 @endsection
@@ -67,6 +132,7 @@
 @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        // Status Chart
         const statusLabels = ['pending', 'under_investigation', 'resolved', 'closed'];
         const statusData = [
             {{ $statusCounts['pending'] ?? 0 }},
@@ -91,6 +157,36 @@
                 responsive: true,
                 plugins: {
                     legend: { display: false }
+                }
+            }
+        });
+
+        // Login Attempts Chart
+        const loginLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const loginData = @json($loginAttemptsData ?? [0,0,0,0,0,0,0]);
+        const loginCtx = document.getElementById('loginChart').getContext('2d');
+        new Chart(loginCtx, {
+            type: 'line',
+            data: {
+                labels: loginLabels,
+                datasets: [{
+                    label: 'Login Attempts',
+                    data: loginData,
+                    borderColor: '#696cff',
+                    backgroundColor: 'rgba(105, 108, 255, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
                 }
             }
         });
