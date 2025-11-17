@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AIController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\SavedRouteController;
+use App\Http\Controllers\Api\MapController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -30,6 +31,9 @@ Route::post('/test-google-maps', [AIController::class, 'testGoogleMaps']);
 Route::post('/test-gemini', [AIController::class, 'testGemini']);
 Route::get('/test-both-apis', [AIController::class, 'testBothAPIs']);
 Route::post('/safer-route-debug', [AIController::class, 'generateSaferRouteDebug']);
+
+// Directions (Google Routes API v2)
+Route::post('/directions', [MapController::class, 'getDirections']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile', [App\Http\Controllers\Api\ProfileController::class, 'show']);
