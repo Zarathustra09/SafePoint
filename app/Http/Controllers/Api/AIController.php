@@ -15,6 +15,16 @@ class AIController extends Controller
 {
     private Client $geminiClient;
 
+    // Tanauan City, Batangas bounds (precise bounding box)
+    // Top left: 14.153878, 121.042177
+    // Top right: 14.153850, 121.153121
+    // Bottom right: 14.026624, 121.157168
+    // Bottom left: 14.031997, 121.055551
+    private const TANAUAN_NORTH = 14.153878;  // Top edge
+    private const TANAUAN_SOUTH = 14.026624;  // Bottom edge
+    private const TANAUAN_EAST = 121.157168;  // Right edge
+    private const TANAUAN_WEST = 121.042177;  // Left edge
+
     public function __construct()
     {
         $this->geminiClient = new Client(config('services.gemini.api_key'));
@@ -498,67 +508,26 @@ class AIController extends Controller
 
 
     /**
-     * Check if coordinates are within Tanauan City, Batangas using Google Maps API
+     * Check if coordinates are within Tanauan City, Batangas bounds
      */
     protected function isInTanauan(float $lat, float $lng): bool
     {
-        $apiKey = env('GOOGLE_MAPS_API_KEY');
+        $isInBounds = $lat >= self::TANAUAN_SOUTH
+            && $lat <= self::TANAUAN_NORTH
+            && $lng >= self::TANAUAN_WEST
+            && $lng <= self::TANAUAN_EAST;
 
-        if (empty($apiKey)) {
-            return false;
-        }
+        Log::debug('Tanauan bounds check', [
+            'coordinates' => ['lat' => $lat, 'lng' => $lng],
+            'in_bounds' => $isInBounds,
+            'bounds' => [
+                'north' => self::TANAUAN_NORTH,
+                'south' => self::TANAUAN_SOUTH,
+                'east' => self::TANAUAN_EAST,
+                'west' => self::TANAUAN_WEST,
+            ],
+        ]);
 
-        $url = "https://maps.googleapis.com/maps/api/geocode/json?latlng={$lat},{$lng}&key={$apiKey}";
-        $response = Http::get($url);
-
-        if (!$response->successful()) {
-            return false;
-        }
-
-        $data = $response->json();
-
-        if (empty($data['results'])) {
-            return false;
-        }
-
-        foreach ($data['results'] as $result) {
-            if (!empty($result['address_components'])) {
-                $components = $result['address_components'];
-                $hasTanauan = false;
-                $hasBatangas = false;
-
-                foreach ($components as $component) {
-                    $types = $component['types'] ?? [];
-                    $name = strtolower($component['long_name'] ?? '');
-
-                    // Check for Tanauan in locality or administrative area
-                    if ((in_array('locality', $types) || in_array('administrative_area_level_2', $types)) &&
-                        strpos($name, 'tanauan') !== false) {
-                        $hasTanauan = true;
-                    }
-
-                    // Check for Batangas in administrative area level 1 (province)
-                    if (in_array('administrative_area_level_1', $types) &&
-                        strpos($name, 'batangas') !== false) {
-                        $hasBatangas = true;
-                    }
-                }
-
-                if ($hasTanauan && $hasBatangas) {
-                    return true;
-                }
-            }
-
-            // Fallback: check formatted address
-            if (!empty($result['formatted_address'])) {
-                $formattedAddress = strtolower($result['formatted_address']);
-                if (strpos($formattedAddress, 'tanauan') !== false &&
-                    strpos($formattedAddress, 'batangas') !== false) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        return $isInBounds;
     }
 }

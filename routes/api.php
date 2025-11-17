@@ -34,6 +34,7 @@ Route::post('/safer-route-debug', [AIController::class, 'generateSaferRouteDebug
 
 // Directions (Google Routes API v2)
 Route::post('/directions', [MapController::class, 'getDirections']);
+Route::post('/geocode-text', [MapController::class, 'getCoordinatesFromText']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile', [App\Http\Controllers\Api\ProfileController::class, 'show']);
